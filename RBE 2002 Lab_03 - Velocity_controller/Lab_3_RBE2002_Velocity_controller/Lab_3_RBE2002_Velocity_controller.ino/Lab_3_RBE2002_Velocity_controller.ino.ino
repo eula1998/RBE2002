@@ -53,7 +53,7 @@ double calcVel(){
   return Vel;
 }
 
-int motor_driver_pin = 5; 
+int motor_driver_pin = A0; 
 int max_voltage = 5;
 //This function should analogRead the current sense from the motor driver
 //and convert the value to current in milliamps
@@ -62,14 +62,14 @@ double calcCur(void)
   //read analog value
   int reading = analogRead(motor_driver_pin); 
   //convert to volts
-  double voltage = (reading / 1023.0) * 5.0;
+  double voltage = ((double)reading / 1023.0) * 5.0;
   //converts to current in milliamps
-  return voltage / 0.525; //0.525 mV per Amps
+  return voltage / 0.525 * 1000; //0.525 mV per Amps
 }
 
 void setup() {
   Serial.begin(115200);
-  pidCon.setpid(1,0.01,.001);
+  pidCon.setpid(1,0.01,0.001);
 }
 
 
@@ -93,6 +93,7 @@ if(millis()-lastTime>=10){
   //The calc function should take in a set velocity and the current velocity.
   analogWriteVal = pidCon.calc(setVel,velocity);
   analogWrite(5,analogWriteVal);
+  Serial.println(analogWriteVal);
   
   //Calculates the dutycycle of the PWM 0-1
   PWM = analogWriteVal/255;
@@ -133,4 +134,3 @@ if(millis()-lastTime2>50){
   lastTime2=millis();
   }
 }
-
