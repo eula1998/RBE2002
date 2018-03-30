@@ -54,7 +54,7 @@ double calcVel(){
   return Vel;
 }
 
-int motor_driver_pin = A0; 
+int motor_driver_pin = A9; 
 int max_voltage = 5;
 //This function should analogRead the current sense from the motor driver
 //and convert the value to current in milliamps
@@ -62,6 +62,8 @@ double calcCur(void)
 {
   //read analog value
   int reading = analogRead(motor_driver_pin); 
+  Serial.print("reading: ");
+  Serial.println(reading);
   //convert to volts
   double voltage = ((double)reading / 1023.0) * 5.0;
   //converts to current in milliamps
@@ -70,8 +72,8 @@ double calcCur(void)
 
 void setup() {
   Serial.begin(115200);
-  //pidCon.setpid(1,0.01,0.001);
-  pidCon.setpid(5,0.2,0.0015);
+  pidCon.setpid(1,0.01,0.001);
+  //pidCon.setpid(5,0.2,0.0015);
 }
 
 
@@ -95,7 +97,6 @@ if(millis()-lastTime>=10){
   //The calc function should take in a set velocity and the current velocity.
   analogWriteVal = pidCon.calc(setVel,velocity);
   analogWrite(5,analogWriteVal);
-  Serial.println(analogWriteVal);
   
   //Calculates the dutycycle of the PWM 0-1
   PWM = analogWriteVal/255;
@@ -108,29 +109,29 @@ if(millis()-lastTime>=10){
 if(millis()-lastTime2>50){
 
   //Calculate velocity from the encoder in degrees/second
-  Serial.print("velocity= ,");
+  Serial.print("velocity= ");
   Serial.print(velocity);
   Serial.print(" , ");  
 
  //Calculates RPM from velocity
-  Serial.print("RPM = ,");
+  Serial.print("RPM = ");
   Serial.print(RPM);
   Serial.print(" , "); 
 
   //calculates the current of the motor from the analogRead function
   //use the motor drivers data sheet to find the conversion from ADC counts
   //to milliamps 
-  Serial.print("current = ,");
+  Serial.print("current = ");
   Serial.print(current);
   Serial.print(" , "); 
 
   //Calculates the dutycycle of the PWM 0-1
-  Serial.print("PWM = ,");
+  Serial.print("PWM = ");
   Serial.print(PWM);
   Serial.print(" , "); 
 
   //Use the lookup table class to find the torque given the current and RPM
-  Serial.print("torque = ,");
+  Serial.print("torque = ");
   Serial.print(lk.torque(current,RPM));
   Serial.println("");
   lastTime2=millis();
