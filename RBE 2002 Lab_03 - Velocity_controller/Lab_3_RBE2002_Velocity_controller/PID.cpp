@@ -34,7 +34,7 @@ float PID::calc(double setVel, double curVel){
 
     // calculate error
     double error = setVel - curVel; 
-        
+    
     // calculate derivative of error
     double derivative = error - lasterror; 
     lasterror = error; 
@@ -45,13 +45,14 @@ float PID::calc(double setVel, double curVel){
     double integral = sum(pasterror, ARRAY_SIZE); 
 
     // sum up the error value to send to the motor based off gain values. 
-    float control_signal = (kp*error + ki*integral + kd*derivative);
-    Serial.print("Kp value:");
-    Serial.println(kp*error);
-    Serial.print("Ki value:");
-    Serial.println(ki*integral);
-    Serial.print("Kd value:");
-    Serial.println(kd*derivative);
+    float output_velocity = (kp*error + ki*integral + kd*derivative);
+//    Serial.print("Kp value:");
+//    Serial.println(kp*error);
+//    Serial.print("Ki value:");
+//    Serial.println(ki*integral);
+//    Serial.print("Kd value:");
+//    Serial.println(kd*derivative);
+    float control_signal = (output_velocity / 1200.0) * 255.0; //full speed at 12V
     
     // limit control value to 0-254
     if (control_signal > 254){
@@ -62,4 +63,5 @@ float PID::calc(double setVel, double curVel){
  
     //return the control signal
     return control_signal;
+    //return 255;
 }
