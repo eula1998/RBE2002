@@ -45,8 +45,15 @@ float PID::calc(double setVel, double curVel){
     double integral = sum(pasterror, ARRAY_SIZE); 
 
     // sum up the error value to send to the motor based off gain values. 
-    float control_signal = (kp*error + ki*integral + kd*derivative);
- 
+    float output_velocity = (kp*error + ki*integral + kd*derivative);
+    Serial.print("Kp value:");
+    Serial.println(kp*error);
+    Serial.print("Ki value:");
+    Serial.println(ki*integral);
+    Serial.print("Kd value:");
+    Serial.println(kd*derivative);
+    float control_signal = output_velocity / 1200 * 255; //full speed at 12V
+    
     // limit control value to 0-254
     if (control_signal > 254){
       control_signal = 254; 
