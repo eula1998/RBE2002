@@ -20,7 +20,8 @@ double curTime=0;
 double prevTime=0;
 double timeInterval=0;
 double movement=0;
-double ticksToDeg= 0.2206;
+//double ticksToDeg= 0.2206;
+double ticksToDeg = 0.1125;
 double prevPos;
 long lastTime=0;
 long lastTime2=0;
@@ -69,7 +70,8 @@ double calcCur(void)
 
 void setup() {
   Serial.begin(115200);
-  pidCon.setpid(1,0.01,0.001);
+  //pidCon.setpid(1,0.01,0.001);
+  pidCon.setpid(5,0.2,0.0015);
 }
 
 
