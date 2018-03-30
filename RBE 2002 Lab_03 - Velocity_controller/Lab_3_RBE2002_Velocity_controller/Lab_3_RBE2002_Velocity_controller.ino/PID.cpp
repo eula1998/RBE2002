@@ -52,7 +52,7 @@ float PID::calc(double setVel, double curVel){
     Serial.println(ki*integral);
     Serial.print("Kd value:");
     Serial.println(kd*derivative);
-    float control_signal = output_velocity / 1200 * 255; //full speed at 12V
+    float control_signal = (output_velocity / 1200.0) * 255.0; //full speed at 12V
     
     // limit control value to 0-254
     if (control_signal > 254){
@@ -63,4 +63,5 @@ float PID::calc(double setVel, double curVel){
  
     //return the control signal
     return control_signal;
+    //return 255;
 }
