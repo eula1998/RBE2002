@@ -10,6 +10,7 @@
 //Class constructor
 PID::PID(){
   index = 0;
+  ki_sum = 0.0;
 }
 
 //Function to set PID gain values
@@ -34,15 +35,19 @@ float PID::calc(double setVel, double curVel){
 
     // calculate error
     double error = setVel - curVel; 
-    
+        
     // calculate derivative of error
     double derivative = error - lasterror; 
     lasterror = error; 
     
     // calculate integral error. Running average is best but hard to implement
-    pasterror[index] = error; 
-    index = (index+1)%ARRAY_SIZE; 
-    double integral = sum(pasterror, ARRAY_SIZE); 
+//    pasterror[index] = error; 
+//    index = (index+1)%ARRAY_SIZE; 
+//    double integral = sum(pasterror, ARRAY_SIZE); 
+    ki_sum += error; 
+    double integral = ki_sum;
+
+
 
     // sum up the error value to send to the motor based off gain values. 
     float output_velocity = (kp*error + ki*integral + kd*derivative);
@@ -63,5 +68,5 @@ float PID::calc(double setVel, double curVel){
  
     //return the control signal
     return control_signal;
-    //return 255;
+//    return 255;
 }

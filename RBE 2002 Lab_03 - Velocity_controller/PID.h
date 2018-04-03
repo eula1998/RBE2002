@@ -8,8 +8,6 @@
 #ifndef PID_H_
 #define PID_H_
 
-#define ARRAY_SIZE 10
-
 class PID {
   
 public:
@@ -25,9 +23,7 @@ void setpid(float P, float I, float D);
 float calc(double setVel, double curVel);
 
 private:
-double pasterror[ARRAY_SIZE]; 
-int index; 
-int lasterror; 
+
 };
 
 

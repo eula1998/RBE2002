@@ -68,7 +68,7 @@ float Lookup::torque(float current,float rpm)
    if ( current>1980 && current<2199){
     x=9;
    }
-   if( current>2200 && current<3000){
+   if( current>2200){
     x=10;
    }
 
@@ -103,10 +103,11 @@ float Lookup::torque(float current,float rpm)
    if(rpm<39 && rpm>20){
     y=9;
    }
-   if(rpm<19 && rpm>0){
+   if(rpm < 19 && rpm >= 0){
     y=10;
    }
    //returns the torque from the lookup table
+ 
    float torq=torqueArray[x][y];
    return torq;
    }

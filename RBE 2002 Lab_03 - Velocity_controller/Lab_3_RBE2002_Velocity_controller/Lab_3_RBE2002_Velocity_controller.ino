@@ -62,12 +62,12 @@ double calcCur(void)
 {
   //read analog value
   int reading = analogRead(motor_driver_pin); 
-  Serial.print("reading: ");
-  Serial.println(reading);
+//  Serial.print("reading: ");
+//  Serial.println(reading);
   //convert to volts
   double voltage = ((double)reading / 1023.0) * 5.0;
   //converts to current in milliamps
-  return voltage / 0.525 * 1000; //0.525 mV per Amps
+  return voltage / 0.525 * 1000; //0.525 V per Amps
 }
 
 void setup() {
@@ -106,34 +106,37 @@ if(millis()-lastTime>=10){
 }
 
 //print data time
-if(millis()-lastTime2>50){
+if(millis()-lastTime2>50){//was 50
 
   //Calculate velocity from the encoder in degrees/second
-  Serial.print("velocity= ");
-  Serial.print(velocity);
-  Serial.print(" , ");  
+//  Serial.print("velocity= ");
+//  Serial.print(velocity);
+//  Serial.print(" , ");  
 
  //Calculates RPM from velocity
-  Serial.print("RPM = ");
-  Serial.print(RPM);
-  Serial.print(" , "); 
+//  Serial.print("RPM = ");
+//  Serial.print(RPM);
+//  Serial.print(" , "); 
 
   //calculates the current of the motor from the analogRead function
   //use the motor drivers data sheet to find the conversion from ADC counts
   //to milliamps 
-  Serial.print("current = ");
-  Serial.print(current);
-  Serial.print(" , "); 
+//  Serial.print("current = ");
+//  Serial.print(current);
+//  Serial.print(" , "); 
 
   //Calculates the dutycycle of the PWM 0-1
-  Serial.print("PWM = ");
-  Serial.print(PWM);
-  Serial.print(" , "); 
+//  Serial.print("PWM = ");
+//  Serial.print(PWM);
+//  Serial.print(" , "); 
 
   //Use the lookup table class to find the torque given the current and RPM
-  Serial.print("torque = ");
+//  Serial.print("torque = ");
+  Serial.print(millis()); 
+  Serial.print(",");
   Serial.print(lk.torque(current,RPM));
   Serial.println("");
+  
   lastTime2=millis();
   }
 }
