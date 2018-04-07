@@ -47,6 +47,30 @@ double getHeading() {
 	return heading;
 }
 
+//==================================================
+//===                ENCODER                     ===
+//==================================================
+
+Encoder rightEnc(2, 3); 
+Encoder leftEnc(18, 19); 
+double encFactor = 0.00269980618667872856430383415751; //  2.75in / PI / 3200 tick/rev
+
+/**
+ * resets the encoder count
+ */
+void resetEnc() {
+  rightEnc.write(0); 
+  leftEnc.write(0);
+  delay(100);
+}
+
+double readLeft(){
+  return (double) leftEnc.read() * encFactor; 
+}
+
+double readRight(){
+  return (double rightEnc.read()*encFactor;
+}
 
 //==================================================
 //===                   MAIN                     ===
@@ -55,22 +79,24 @@ double getHeading() {
 void setup() {
 	Serial.begin(115200);
 	//GYRO
-//	Wire.begin();
-//	//keeps polling the gyro status
-//	//side effect: blocks the program till the power is turned on
-//	while (!gyro.init()) {
-//		Serial.println("Failed to autodetect gyro type!");
-//		delay(200);
-//	}
-//	gyro.enableDefault();
-//
-//	//GYRO calibration
-//	double calibration = 0;
-//	for (int x = 0; x < 100; x++) {
-//		gyro.read();
-//		calibration += gyro.g.y;
-//	}
-//	zero = calibration / 100.0;
+	Wire.begin();
+	//keeps polling the gyro status
+	//side effect: blocks the program till the power is turned on
+	while (!gyro.init()) {
+		Serial.println("Failed to autodetect gyro type!");
+		delay(200);
+	}
+	gyro.enableDefault();
+
+	//GYRO calibration
+	double calibration = 0;
+	for (int x = 0; x < 100; x++) {
+		gyro.read();
+		calibration += gyro.g.y;
+	}
+	zero = calibration / 100.0;
+
+  resetEnc();
 
 }
 
@@ -92,5 +118,9 @@ void loop() {
     Serial.print("Heading: ");
     Serial.println(getHeading());
   }
+
+  Serial.print(readLeft()); 
+  Serial.print(" "); 
+  Serial.println(readRight());
   ltime = millis();
 }
