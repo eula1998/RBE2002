@@ -18,8 +18,7 @@ static int lmotorpinB = 8; //backward pin
 
 Robot::Robot() :
     motorright(rmotorpinF, rmotorpinB), motorleft(lmotorpinF, lmotorpinB), 
-    imuPID(1,0.01,0.001) 
-{
+    imuPID(17,0.05,15){
 }
 
 Robot::~Robot() {
@@ -43,23 +42,21 @@ void Robot::drive(int leftspeed, int rightspeed) {
 
 bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 //  int buffer = 10;
-  int speed = imuPID.calc(degree, abs(currentHeading));
+  int speed = imuPID.calc(degree, abs(currentHeading), maxspeed);
   if (CCW) {
 //    if (abs(currentHeading) < (degree)) {
-    if (abs(speed)  > 30){
+    if (abs(speed)  > 20){
       drive(-speed, speed);
       Serial.print("rotating: ");
-      Serial.println(currentHeading);
     } else {
         drive(0, 0);
         return true;
     }
   } else { //CW
 //    if (abs(currentHeading) < (degree)) {
-    if (abs(speed)  > 30){
+    if (abs(speed)  > 20){
       drive(speed, -speed);
       Serial.print("rotating: ");
-      Serial.println(currentHeading);
     } else {
         drive(0, 0);
         return true;

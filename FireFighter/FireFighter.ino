@@ -4,7 +4,7 @@
 #include "Encoder.h"
 #include "Robot.h"
 
-#define FRAME (10) // gyro heading refresh rate, in millis
+#define FRAME (40) // gyro heading refresh rate, in millis
 
 Robot robot; 
 
@@ -76,7 +76,7 @@ double readRight(){
 //==================================================
 
 void setup() {
-	Serial.begin(9600);
+	Serial.begin(115200);//stay there for the gyro's sake
 	//GYRO
 	Wire.begin();
 	//keeps polling the gyro status
@@ -109,7 +109,7 @@ int curtime = 0;
 
 void loop() {
 	// put your main code here, to run repeatedly:
-//  robot.turn(90, true, 255, heading);
+  robot.turn(180, true, 200, heading);
 
 
 //do what needs to be done in a frame

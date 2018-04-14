@@ -10,6 +10,8 @@
 #ifndef PID_H_
 #define PID_H_
 
+#define ARRAY_SIZE (20)
+
 class PID {
 public:
   PID(double p, double i, double d);
@@ -17,12 +19,14 @@ public:
   /**
    * [-255, 255] backward -> forward
    */
-  double calc(double setVel, double curVel);
+  double calc(double setVel, double curVel, int max);
 private:
   double kp, ki, kd;
   double ki_sum;
-
   double lasterror;
+
+  int index; 
+  double pasterror[ARRAY_SIZE]; 
 };
 
 #endif /* POLOLUMOTOR_H_ */
