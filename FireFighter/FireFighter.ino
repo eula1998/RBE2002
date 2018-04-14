@@ -4,7 +4,7 @@
 #include "Encoder.h"
 #include "Robot.h"
 
-#define FRAME (25) // gyro heading refresh rate
+#define FRAME (10) // gyro heading refresh rate, in millis
 
 Robot robot; 
 
@@ -16,7 +16,7 @@ L3G gyro;
 
 //stores the current accumulated heading read by the current frame
 double heading;
-int zero;
+double zero;
 
 // turn off gyro reading when not needed to reduce interference with other sensor that interrupts
 bool usegyro;
@@ -39,10 +39,9 @@ double getHeading() {
 	//integrates the gyro reading using the time interval since last read
 	//assuming the robot is turning at a constant angular velocity since the last reading
 	//unit in millis degrees (mdegree/s * ms * 1s/1000ms)
-	//positive = CW
-	if (((int) gyro.g.y > 0 ? (int) gyro.g.y : -gyro.g.y) > 500) {
-		heading += ((double) gyro.g.y - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
-//    lastread = millis();
+	//positive = CCW
+	if (((int) gyro.g.x > 0 ? (int) gyro.g.x : -gyro.g.x) > 500) {
+		heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
 	}
 	return heading;
 }
@@ -69,7 +68,7 @@ double readLeft(){
 }
 
 double readRight(){
-  return (double rightEnc.read()*encFactor;
+  return (double) rightEnc.read()*encFactor;
 }
 
 //==================================================
@@ -77,7 +76,7 @@ double readRight(){
 //==================================================
 
 void setup() {
-	Serial.begin(115200);
+	Serial.begin(9600);
 	//GYRO
 	Wire.begin();
 	//keeps polling the gyro status
@@ -87,40 +86,45 @@ void setup() {
 		delay(200);
 	}
 	gyro.enableDefault();
+ delay(1000);
 
 	//GYRO calibration
 	double calibration = 0;
 	for (int x = 0; x < 100; x++) {
 		gyro.read();
-		calibration += gyro.g.y;
+		calibration += gyro.g.x;
+    delay(25);
 	}
 	zero = calibration / 100.0;
 
-  resetEnc();
+//  resetEnc();
+//  usegyro = true;
+  zeroHeading();
 
 }
 
 //states for recording the frame rate
-int ltime = 0;
+int ltime = 0;//last time
 int curtime = 0;
 
 void loop() {
 	// put your main code here, to run repeatedly:
-  robot.drive(255, 255);
+//  robot.turn(90, true, 255, heading);
 
 
 //do what needs to be done in a frame
   //set frame rate for gyro and everything else
   while (millis() - ltime < FRAME) {
   }
+  
+  ltime = millis();
   //the gyro can not be used simultaneously with bluetooth
   if (usegyro) {
     Serial.print("Heading: ");
     Serial.println(getHeading());
   }
 
-  Serial.print(readLeft()); 
-  Serial.print(" "); 
-  Serial.println(readRight());
-  ltime = millis();
+//  Serial.print(readLeft()); 
+//  Serial.print(" "); 
+//  Serial.println(readRight());
 }

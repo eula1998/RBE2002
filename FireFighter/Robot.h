@@ -11,6 +11,7 @@
 #define ROBOT_H_
 
 #include "PololuMotor.h"
+#include "PID.h"
 
 class Robot {
 public:
@@ -22,6 +23,7 @@ public:
 private:
   PololuMotor motorright;
   PololuMotor motorleft;
+  PID imuPID; 
 };
 
 #endif /* POLOLUMOTOR_H_ */
