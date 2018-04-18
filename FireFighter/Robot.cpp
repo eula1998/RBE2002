@@ -16,9 +16,16 @@ static int rmotorpinB = 6; //backward pin
 static int lmotorpinF = 7; //forward pin
 static int lmotorpinB = 8; //backward pin
 
+static int rencoder1 = 2; 
+static int rencoder2 = 3; 
+
+static int lencoder1 = 18; 
+static int lencoder2 = 19;
+
 Robot::Robot() :
     motorright(rmotorpinF, rmotorpinB), motorleft(lmotorpinF, lmotorpinB), 
-    imuPID(17,0.05,15){
+    imuPID(17,0.05,15),rightEnc(rencoder1, rencoder2), leftEnc(lencoder1, lencoder2)
+    {
 }
 
 Robot::~Robot() {
@@ -33,6 +40,7 @@ void Robot::drive(int leftspeed, int rightspeed) {
   this->motorleft.drive(-leftspeed);
   this->motorright.drive(rightspeed);
 }
+
 
 /**
  * This function leaves one light sensor on the black line
@@ -63,4 +71,26 @@ bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
     }
   }
   return false;
+}
+
+
+//==================================================
+//===                ENCODER                     ===
+//==================================================
+
+/**
+ * resets the encoder count
+ */
+void Robot::resetEnc() {
+  rightEnc.write(0); 
+  leftEnc.write(0);
+  delay(100);
+}
+
+double Robot::readLeft(){
+  return (double) leftEnc.read() * encFactor; 
+}
+
+double Robot::readRight(){
+  return (double) rightEnc.read()*encFactor;
 }

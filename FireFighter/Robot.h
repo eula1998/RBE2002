@@ -1,3 +1,5 @@
+
+
 /*
  * Robot.h
  *  An interface intended for controlling the Pololu motors with a
@@ -12,6 +14,8 @@
 
 #include "PololuMotor.h"
 #include "PID.h"
+#include <Encoder.h>
+#include <Ultrasonic.h>
 
 class Robot {
 public:
@@ -20,10 +24,20 @@ public:
   
   void drive(int leftspeed, int rightspeed); 
   bool turn(int degree, bool CCW, int maxspeed, double currentHeading);
+  double readLeft(); //in inches
+  double readRight();//in inches
+  //driveDist
+  //
 private:
   PololuMotor motorright;
   PololuMotor motorleft;
   PID imuPID; 
+  Encoder rightEnc; 
+  Encoder leftEnc;  
+  double encFactor = 0.0016198837120072371385823004945; //  2.75in * PI / 3200 tick/rev * 3 / 5
+  void resetEnc();
+  Ultrasonic usFront; 
+  Ultrasonic usRight;
 };
 
 #endif /* POLOLUMOTOR_H_ */

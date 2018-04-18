@@ -1,11 +1,20 @@
+#include <QTRSensors.h>//line tracker
+
 #include "L3G.h"
 #include "Wire.h"
 #include "Arduino.h"
-#include "Encoder.h"
 #include "Robot.h"
 
 #define FRAME (40) // gyro heading refresh rate, in millis
 
+/**
+ * encoder left: 2, 23 
+ * encoder right: 3, 24
+ * front: in: 27 out: 26
+ * right: in: 29 out: 28
+ * stepper pwn: 25
+ * button: 22
+ */
 Robot robot; 
 
 //==================================================
@@ -46,30 +55,6 @@ double getHeading() {
 	return heading;
 }
 
-//==================================================
-//===                ENCODER                     ===
-//==================================================
-
-Encoder rightEnc(2, 3); 
-Encoder leftEnc(18, 19); 
-double encFactor = 0.00269980618667872856430383415751; //  2.75in / PI / 3200 tick/rev
-
-/**
- * resets the encoder count
- */
-void resetEnc() {
-  rightEnc.write(0); 
-  leftEnc.write(0);
-  delay(100);
-}
-
-double readLeft(){
-  return (double) leftEnc.read() * encFactor; 
-}
-
-double readRight(){
-  return (double) rightEnc.read()*encFactor;
-}
 
 //==================================================
 //===                   MAIN                     ===
@@ -110,6 +95,12 @@ int curtime = 0;
 void loop() {
 	// put your main code here, to run repeatedly:
   robot.turn(180, true, 200, heading);
+//  Serial.print("left "); 
+//  Serial.println(robot.readLeft()); 
+//  Serial.print("right"); 
+//  Serial.println(robot.readRight()); 
+//  robot.drive(90, 90);
+//CANNOT READ ENCODER AND USE GYRO AT THE SAME TIME
 
 
 //do what needs to be done in a frame

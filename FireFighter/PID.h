@@ -16,9 +16,8 @@ class PID {
 public:
   PID(double p, double i, double d);
   virtual ~PID();
-  /**
-   * [-255, 255] backward -> forward
-   */
+
+  
   double calc(double setVel, double curVel, int max);
 private:
   double kp, ki, kd;
