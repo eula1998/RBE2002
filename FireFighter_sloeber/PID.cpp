@@ -51,14 +51,15 @@ double PID::calc(double setVel, double curVel, int max){
 
     // sum up the error value to send to the motor based off gain values. 
     float control_signal = (kp*error + ki*integral + kd*derivative);
-    Serial.print("p value:");
-    Serial.println(kp*error);
-    Serial.print("i value:");
-    Serial.println(ki*integral);
-    Serial.print("d value:");
-    Serial.println(kd*derivative);
-    Serial.print("control:");
-    Serial.println(control_signal);
+//    Serial.print("p value:");
+//    Serial.println(kp*error);
+//    Serial.print("i value:");
+//    Serial.println(ki*integral);
+//    Serial.print("d value:");
+//    Serial.println(kd*derivative);
+//    Serial.print("control:");
+//    Serial.println(control_signal);
+
 //    float control_signal = (output_velocity / 1200.0) * 255.0; //full speed at 12V
 
     // limit control value to 0-254

@@ -22,10 +22,16 @@ static int rencoder2 = 3;
 static int lencoder1 = 18;
 static int lencoder2 = 19;
 
+static int usf_in = 27, usf_out = 26;
+static int usr_in = 29, usr_out = 28;
+
+
+
 Robot::Robot() :
 		motorright(rmotorpinF, rmotorpinB), motorleft(lmotorpinF, lmotorpinB), imuPID(
 				17, 0.05, 15), rightEnc(rencoder1, rencoder2), leftEnc(
-				lencoder1, lencoder2), usFront(27, 26), usRight(29, 28) {
+				lencoder1, lencoder2), usFront(usf_in, usf_out), usRight(usr_in,
+				usr_out), y(0), x(0), stepper(25, 23), ideal_heading(0) {
 }
 
 Robot::~Robot() {
@@ -41,35 +47,59 @@ void Robot::drive(int leftspeed, int rightspeed) {
 	this->motorright.drive(rightspeed);
 }
 
-/**
- * This function leaves one light sensor on the black line
- * assuming that the target degree is a multiple of 90, or along the black lines
- * theoretically the fix with a straight movement function call
- */
 
 bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
-//  int buffer = 10;
-	int speed = imuPID.calc(degree, abs(currentHeading), maxspeed);
-	if (CCW) {
-//    if (abs(currentHeading) < (degree)) {
-		if (abs(speed) > 20) {
-			drive(-speed, speed);
-			Serial.print("rotating: ");
-		} else {
-			drive(0, 0);
-			return true;
-		}
-	} else { //CW
-//    if (abs(currentHeading) < (degree)) {
-		if (abs(speed) > 20) {
-			drive(speed, -speed);
-			Serial.print("rotating: ");
-		} else {
-			drive(0, 0);
-			return true;
-		}
+	int target_heading = ideal_heading + (degree * (CCW ? 1 : -1));
+	int speed = imuPID.calc(target_heading, currentHeading, maxspeed);
+
+	if (abs(speed) > 20) {
+		drive(-speed, speed);
+	} else {
+		drive(0, 0);
+		ideal_heading = target_heading;
+		return true;
 	}
 	return false;
+}
+
+bool Robot::driveDist(int speed, int distance) {
+	int s = (distance - readLeft()) / distance * speed + 30; //30 is the base speed
+	if (distance > readLeft()) {
+		drive(s, s);
+		return false;
+	}
+
+	drive(0, 0);
+	return true;
+}
+
+RightAlign Robot::rightAlign(int maxspeed) {
+	if (isFront()){
+		drive(0, 0);
+		return TURNLEFT;
+	}else if (isRight()){//need to change
+//		int s = (usFront.distanceRead() - 15) / 100 * maxspeed + 30;
+		int s = maxspeed;
+		//if deviated away from the wall, tilt right until within range again
+
+		drive(s, s);
+		return ALRIGHT;
+	}else{
+		drive(0, 0);
+		return TURNRIGHT;
+	}
+}
+
+bool Robot::isRight(){
+	return usRight.distanceRead() < 15; //also need line follower readings
+}
+
+bool Robot::isFront(){
+	return usFront.distanceRead() < 15;//also need line follower readings
+}
+
+void Robot::setStepperAngle(int deg){
+	stepper.turnTo((double)deg);
 }
 
 //==================================================
@@ -87,8 +117,10 @@ void Robot::resetEnc() {
 
 double Robot::readLeft() {
 	return (double) leftEnc.read() * encFactor;
+//	return usFront.distanceRead();
 }
 
 double Robot::readRight() {
 	return (double) rightEnc.read() * encFactor;
+//	return usRight.distanceRead();
 }

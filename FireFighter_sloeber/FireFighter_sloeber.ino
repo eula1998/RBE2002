@@ -2,10 +2,11 @@
 
 #include "L3G.h"
 #include "Wire.h"
-#include "Arduino.h"
+#include <Arduino.h>
 #include "Robot.h"
 
 #define FRAME (40) // gyro heading refresh rate, in millis
+//#define FRAME (1000)
 
 /**
  * encoder left: 2, 23
@@ -26,6 +27,7 @@ L3G gyro;
 //stores the current accumulated heading read by the current frame
 double heading;
 double zero;
+double global_heading;
 
 // turn off gyro reading when not needed to reduce interference with other sensor that interrupts
 bool usegyro;
@@ -34,7 +36,7 @@ bool usegyro;
  * reset the accumulated heading to zero and get ready for the next read
  */
 void zeroHeading() {
-	heading = 0.0;
+	heading = 0;
 	usegyro = true;
 	Serial.println("Resetting");
 }
@@ -50,8 +52,10 @@ double getHeading() {
 	//unit in millis degrees (mdegree/s * ms * 1s/1000ms)
 	//positive = CCW
 	if (((int) gyro.g.x > 0 ? (int) gyro.g.x : -gyro.g.x) > 500) {
+		global_heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
 		heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
 	}
+	return global_heading;
 	return heading;
 }
 
@@ -81,25 +85,49 @@ void setup() {
 	}
 	zero = calibration / 100.0;
 
-//  resetEnc();
-//  usegyro = true;
+//  usegyro = false;
 	zeroHeading();
-
+	global_heading = 0;
 }
 
 //states for recording the frame rate
 int ltime = 0;	//last time
 int curtime = 0;
 
+int temp = 0;
+
 void loop() {
-	// put your main code here, to run repeatedly:
-	robot.turn(180, true, 200, heading);
 //  Serial.print("left ");
 //  Serial.println(robot.readLeft());
+//  delay(200);
 //  Serial.print("right");
 //  Serial.println(robot.readRight());
 //  robot.drive(90, 90);
 //CANNOT READ ENCODER AND USE GYRO AT THE SAME TIME
+//NEED TO HOLD THE STEPPER MOTOR IN PLACE BEFORE TURNING ON THE ROBOT
+
+	switch (temp) {
+	case 0:
+		if (robot.turn(90, true, 175, global_heading)) {
+			temp = 1;
+			delay(1500);
+			zeroHeading();
+		}
+		break;
+	case 1:
+		if (robot.turn(75, false, 175, global_heading)){
+			temp = 2;
+//			usegyro = false;
+		}
+		break;
+	case 2:
+		if (robot.turn(105, false, 175, global_heading)){
+			temp = 3;
+//			usegyro = false;
+		}
+		break;
+	}
+	Serial.println(temp);
 
 //do what needs to be done in a frame
 	//set frame rate for gyro and everything else

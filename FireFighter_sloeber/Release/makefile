@@ -83,7 +83,7 @@ C:\Users\Lingrui\Desktop\zlr\school-docs\WPI2017-18\D\RBE2002\Code\RBE2002\FireF
 
 FireFighter_sloeber.elf: $(LINK_OBJ) $(AR)
 	@echo 'Starting combiner'
-	"C:\Users\Lingrui\Desktop\sloeber\/arduinoPlugin/packages/arduino/tools/avr-gcc/4.9.2-atmel3.5.4-arduino2/bin/avr-gcc" -Wall -Wextra -Os -Wl,--gc-sections,--relax -mmcu=atmega2560 -o "C:/Users/Lingrui/Desktop/zlr/school-docs/WPI2017-18/D/RBE2002/Code/RBE2002/FireFighter_sloeber/Release/FireFighter_sloeber.elf"   $(LINK_OBJ)   C:/Users/Lingrui/Desktop/zlr/school-docs/WPI2017-18/D/RBE2002/Code/RBE2002/FireFighter_sloeber/Release/arduino.ar  "-LC:/Users/Lingrui/Desktop/zlr/school-docs/WPI2017-18/D/RBE2002/Code/RBE2002/FireFighter_sloeber/Release" -lm
+	"C:\Users\Lingrui\Desktop\sloeber\/arduinoPlugin/packages/arduino/tools/avr-gcc/4.9.2-atmel3.5.4-arduino2/bin/avr-gcc" -Wall -Wextra -Os -Wl,--gc-sections,--relax -mmcu=atmega2560 -o "C:\Users\Lingrui\Desktop\zlr\school-docs\WPI2017-18\D\RBE2002\Code\RBE2002\FireFighter_sloeber/Release/FireFighter_sloeber.elf"   $(LINK_OBJ)   C:/Users/Lingrui/Desktop/zlr/school-docs/WPI2017-18/D/RBE2002/Code/RBE2002/FireFighter_sloeber/Release/arduino.ar  "-LC:\Users\Lingrui\Desktop\zlr\school-docs\WPI2017-18\D\RBE2002\Code\RBE2002\FireFighter_sloeber/Release" -lm
 	@echo 'Finished building: $@'
 	@echo ' '
 
