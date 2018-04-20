@@ -9,8 +9,8 @@
 #include <Arduino.h>
 
 static float stepangle = 1.8;
-static int frequency = 20;
-static double delays = 1000 / frequency / 2;
+static int frequency = 25;
+static double delays = 500 / frequency;
 
 StepperMotor::StepperMotor(int outputpin, int dirpin) {
 	// TODO Auto-generated constructor stub
@@ -30,10 +30,10 @@ StepperMotor::~StepperMotor() {
  *[left 90 deg, right 90 deg], with forward facing be 0 deg
  */
 void StepperMotor::turnTo(double deg) {
-	int steps = (deg - heading) / stepangle;
-	if (steps < 0) {
-		digitalWrite(DIR_pin, LOW); //HIGH means ccw
-		steps = -steps;
+	int steps = abs(deg - heading) / stepangle;
+	steps++;
+	if (deg < heading) {
+		digitalWrite(DIR_pin, LOW); //LOW means ccw
 	} else {
 		digitalWrite(DIR_pin, HIGH);
 	}
@@ -42,7 +42,23 @@ void StepperMotor::turnTo(double deg) {
 		delay(delays);
 		digitalWrite(PWM_pin, LOW);
 		delay(delays);
-		Serial.println("turn");
 	}
-	heading = deg;
+
+//	Serial.print("Initial heading, ");
+//	Serial.print(heading);
+	if (deg < heading) {
+		heading -= (steps * stepangle);
+	} else {
+		heading += (steps * stepangle);
+	}
+//	Serial.print(", final heading, ");
+//	Serial.print(heading);
+//	Serial.print(", Steps, ");
+//	Serial.print(steps);
+//	Serial.print(", Degree, ");
+//	Serial.println(deg);
+}
+
+double StepperMotor::getHeading(){
+	return heading;
 }

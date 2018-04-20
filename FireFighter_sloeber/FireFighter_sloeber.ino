@@ -85,8 +85,8 @@ void setup() {
 	}
 	zero = calibration / 100.0;
 
-//  usegyro = false;
-	zeroHeading();
+  usegyro = false;
+//	zeroHeading();
 	global_heading = 0;
 }
 
@@ -97,37 +97,37 @@ int curtime = 0;
 int temp = 0;
 
 void loop() {
-//  Serial.print("left ");
-//  Serial.println(robot.readLeft());
-//  delay(200);
-//  Serial.print("right");
-//  Serial.println(robot.readRight());
-//  robot.drive(90, 90);
 //CANNOT READ ENCODER AND USE GYRO AT THE SAME TIME
 //NEED TO HOLD THE STEPPER MOTOR IN PLACE BEFORE TURNING ON THE ROBOT
 
-	switch (temp) {
-	case 0:
-		if (robot.turn(90, true, 175, global_heading)) {
-			temp = 1;
-			delay(1500);
-			zeroHeading();
-		}
-		break;
-	case 1:
-		if (robot.turn(75, false, 175, global_heading)){
-			temp = 2;
-//			usegyro = false;
-		}
-		break;
-	case 2:
-		if (robot.turn(105, false, 175, global_heading)){
-			temp = 3;
-//			usegyro = false;
-		}
-		break;
+//	switch (temp) {
+//	case 0:
+//		if (robot.turn(90, true, 175, global_heading)) {
+//			temp = 1;
+//			delay(5000);
+//			zeroHeading();
+//		}
+//		break;
+//	case 1:
+//		if (robot.turn(75, false, 175, global_heading)){
+//			temp = 2;
+//			delay(5000);
+////			usegyro = false;
+//		}
+//		break;
+//	case 2:
+//		if (robot.turn(105, false, 175, global_heading)){
+//			temp = 3;
+////			usegyro = false;
+//		}
+//		break;
+//	}
+////	Serial.println(temp);
+	for (int x = -90; x <= 90; x+= 15){
+		robot.setStepperAngle(x);
+		delay(500);
 	}
-	Serial.println(temp);
+	delay(500000);
 
 //do what needs to be done in a frame
 	//set frame rate for gyro and everything else
@@ -137,8 +137,8 @@ void loop() {
 	ltime = millis();
 	//the gyro can not be used simultaneously with bluetooth
 	if (usegyro) {
-		Serial.print("Heading: ");
-		Serial.println(getHeading());
+		Serial.print("Heading, ");
+		Serial.print(getHeading());
 	}
 
 //  Serial.print(readLeft());

@@ -13,6 +13,7 @@ public:
 	StepperMotor(int outputpin, int dirpin);
 	virtual ~StepperMotor();
 	void turnTo(double deg);
+	double getHeading();
 private:
 	double heading;//front = 0 deg; right = 90 deg; left = -90 deg
 	int PWM_pin;

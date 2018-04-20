@@ -51,6 +51,12 @@ void Robot::drive(int leftspeed, int rightspeed) {
 bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 	int target_heading = ideal_heading + (degree * (CCW ? 1 : -1));
 	int speed = imuPID.calc(target_heading, currentHeading, maxspeed);
+//	Serial.print(", target, ");
+//	Serial.print(target_heading);
+//	Serial.print(", ideal, ");
+//	Serial.print(ideal_heading);
+//	Serial.print(", speed, ");
+//	Serial.println(speed);
 
 	if (abs(speed) > 20) {
 		drive(-speed, speed);
@@ -59,6 +65,7 @@ bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 		ideal_heading = target_heading;
 		return true;
 	}
+
 	return false;
 }
 
@@ -77,17 +84,32 @@ RightAlign Robot::rightAlign(int maxspeed) {
 	if (isFront()){
 		drive(0, 0);
 		return TURNLEFT;
-	}else if (isRight()){//need to change
+	}else if(usRight.distanceRead() > 70){
+		return TURNRIGHT;
+	}else{
 //		int s = (usFront.distanceRead() - 15) / 100 * maxspeed + 30;
 		int s = maxspeed;
 		//if deviated away from the wall, tilt right until within range again
 
 		drive(s, s);
 		return ALRIGHT;
-	}else{
-		drive(0, 0);
-		return TURNRIGHT;
 	}
+//	else if (usRight.distanceRead() < 5){
+//
+//	}
+
+
+//	else if (isRight()){//need to change
+////		int s = (usFront.distanceRead() - 15) / 100 * maxspeed + 30;
+//		int s = maxspeed;
+//		//if deviated away from the wall, tilt right until within range again
+//
+//		drive(s, s);
+//		return ALRIGHT;
+//	}else{
+//		drive(0, 0);
+//		return TURNRIGHT;
+//	}
 }
 
 bool Robot::isRight(){
