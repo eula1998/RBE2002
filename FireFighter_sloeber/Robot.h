@@ -36,10 +36,14 @@ public:
 
 	void servoDeg(int input);
 
-	int readUsFront();
+	double readUsFront();
+
+	double readUsRight();
 
 	void fan(bool on);
 
+	double readLeftEnc(); //in encoder in inches
+	double readRightEnc(); //in encoder in inches
 private:
 	PololuMotor motorright;
 	PololuMotor motorleft;
@@ -55,13 +59,17 @@ private:
 	Ultrasonic usRight;
 
 	bool isFront();
+
 	bool isFrontLine();
+
 	bool isRightLine();
 
 	double x;
 	double y;
-	double readLeftEnc(); //in encoder in inches
-	double readRightEnc(); //in encoder in inches
+//	double readLeftEnc(); //in encoder in inches
+//	double readRightEnc(); //in encoder in inches
+	double lastLeftEnc;
+	double lastRightEnc;
 
 	StepperMotor stepper;
 

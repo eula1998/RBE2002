@@ -9,28 +9,82 @@
 
 #include "Robot.h"
 #include "Arduino.h"
+#include "LookUpTable.h"
 
-static int rmotorpinF = 5; //forward pin
-static int rmotorpinB = 6; //backward pin
+static int rmotorpinF = 5; //forward pin // in1
+static int rmotorpinB = 4; //backward pin //in2
 
-static int lmotorpinF = 7; //forward pin
-static int lmotorpinB = 8; //backward pin
+static int lmotorpinF = 7; //forward pin //in1
+static int lmotorpinB = 6; //backward pin //in2
 
-static int rencoder1 = 2;
-static int rencoder2 = 3;
+static int rencoder1 = 2; //an interrupt pin //yellow
+static int rencoder2 = 3; //an interrupt pin //white
 
-static int lencoder1 = 18;
-static int lencoder2 = 19;
+static int lencoder1 = 18; //an interrupt pin //yellow
+static int lencoder2 = 19; //an interrupt pin //white
 
-static int usf_in = 27, usf_out = 26;
-static int usr_in = 29, usr_out = 28;
+static int usf_in = 25, usf_out = 26; //digital pins
+static int usr_in = 23, usr_out = 24; //digital pins
 
-static int fan_pin = 4;
+//static int fan_pin = 4;
 
-static int front3_pin = A1, front5_pin = A2;
-static int right7_pin = A3, right8_pin = A4;
+static int front3_pin = A3, front5_pin = A4; //analog pins
+static int right7_pin = A1, right8_pin = A2; //analog pins
+
+static int stepper_step_pin = 28;
+static int stepper_dir_pin = 27;
 
 static double encFactor = 0.0016198837120072371385823004945; //  2.75in * PI / 3200 tick/rev * 3 / 5
+
+static double Sin(double deg){
+	int degree = deg;
+	double difference = deg - (double) degree;
+	if (difference > 0.5) {
+		degree++;
+	}
+	while (degree > 360) {
+		degree -= 360;
+	}
+
+	while (degree < 0) {
+		degree += 360;
+	}
+
+	if (degree >= 0 && degree <= 90) {
+		return sin_t[degree];
+	} else if (degree > 90 && degree <= 180) {
+		return sin_t[180 - degree];
+	} else if (degree > 180 && degree <= 270) {
+		return -sin_t[180 - degree];
+	} else {
+		return -sin_t[degree];
+	}
+}
+
+static double Cos(double deg){
+	int degree = deg;
+	double difference = deg - (double) degree;
+	if (difference > 0.5) {
+		degree++;
+	}
+	while (degree > 360) {
+		degree -= 360;
+	}
+
+	while (degree < 0) {
+		degree += 360;
+	}
+
+	if (degree >= 0 && degree <= 90) {
+		return cos_t[degree];
+	} else if (degree > 90 && degree <= 180) {
+		return -cos_t[180 - degree];
+	} else if (degree > 180 && degree <= 270) {
+		return -cos_t[degree - 180];
+	} else {
+		return cos_t[360-degree];
+	}
+}
 
 
 Robot::Robot() :
@@ -40,7 +94,8 @@ Robot::Robot() :
 		ideal_heading(0),
 		usFront(usf_in, usf_out), usRight(usr_in,usr_out),
 		y(0), x(0),
-		stepper(25, 23){
+		lastLeftEnc(0), lastRightEnc(0),
+		stepper(stepper_step_pin, stepper_dir_pin){
 
 }
 
@@ -72,6 +127,7 @@ bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 	} else {
 		drive(0, 0);
 		ideal_heading = target_heading;
+		resetEnc();
 		return true;
 	}
 
@@ -121,9 +177,12 @@ RightAlign Robot::rightAlign(int maxspeed) {
 }
 
 bool Robot::isFront() {
-	return usFront.distanceRead() < 15 && isFrontLine(); //also need line follower readings
+	return readUsFront() < 2.0 && isFrontLine(); //also need line follower readings
 }
 
+/**
+ * need to change
+ */
 bool Robot::isFrontLine() {
 	return analogRead(front3_pin)  > 200  && analogRead(front5_pin)  > 200; //also need line follower readings
 }
@@ -136,13 +195,19 @@ void Robot::setStepperAngle(int deg) {
 	stepper.turnTo((double) deg);
 }
 
-int Robot::readUsFront(){
-	return usFront.distanceRead();
+// return in inches
+double Robot::readUsFront(){
+	return ((double)usFront.distanceRead() - 2.50) / 2.54;
+}
+
+// return in inches
+double Robot::readUsRight(){
+	return ((double)usRight.distanceRead() - 2.50) / 2.54;
 }
 
 void Robot::fan(bool on){
-	int control = on? 255 : 0;
-	digitalWrite(fan_pin, control);
+//	int control = on? HIGH : LOW;
+//	digitalWrite(fan_pin, control);
 }
 
 //==================================================
@@ -155,15 +220,25 @@ void Robot::fan(bool on){
 void Robot::resetEnc() {
 	rightEnc.write(0);
 	leftEnc.write(0);
+	lastLeftEnc = 0;
+	lastRightEnc = 0;
 	delay(100);
 }
 
 double Robot::readLeftEnc() {
-	return (double) leftEnc.read() * encFactor;
-//	return usFront.distanceRead();
+	return - (double) leftEnc.read() * encFactor;
 }
 
 double Robot::readRightEnc() {
 	return (double) rightEnc.read() * encFactor;
-//	return usRight.distanceRead();
+}
+
+void Robot::updateCoor(double heading){
+	double currLeftEnc = readLeftEnc();
+	double currRightEnc = readRightEnc();
+	double delta = ((currLeftEnc - lastLeftEnc) + (currRightEnc - lastRightEnc)) / 2;
+	x += delta * Sin(heading);
+	y += delta * Cos(heading);
+	lastLeftEnc = readLeftEnc();
+	lastRightEnc = readRightEnc();
 }

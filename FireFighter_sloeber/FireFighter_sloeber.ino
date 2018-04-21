@@ -6,8 +6,8 @@
 #include "Robot.h"
 #include <Servo.h>
 
-//#define FRAME (40) // gyro heading refresh rate, in millis
-#define FRAME (1000)
+#define FRAME (40) // gyro heading refresh rate, in millis
+//#define FRAME (1000)
 
 /**
  * encoder left: 2, 23
@@ -68,38 +68,59 @@ double getHeading() {
 
 Servo servo;
 //up = 180, down = 0
-static int servopin = 9;
+static int servopin = 8;
 int flamedata[13];
 int flame_pin = A0;
 
-bool checkFlame(){
-	servo.write(90);
-	robot.fan(false);
-	robot.setStepperAngle(90);
-	int angle;
-	int max = 1024;
-	int maxangle = 0;
-	for (int x = 0; x < 13; x++){
-		angle = 15 * x - 90;
-		flamedata[x] = analogRead(flame_pin);
-		Serial.print("flame, ");
-		Serial.print(flamedata[x]);
-		Serial.print(", angle, ");
-		Serial.print(angle);
-		if (flamedata[x] < max){
-			maxangle = angle;
-			max = flamedata[x];
-			Serial.print(", max");
-		}
-		Serial.println();
-	}
-	if (maxangle <= 0){
-		if (max < 300){
-			return true;//maybe also return the 45 deg thingy
-		}
-	}
-	return false;
-}
+typedef enum {LEFT, FORWARD, CONTINUE} FlameStatus;
+//
+//FlameStatus checkFlame(){
+////	servo.write(90);
+//	robot.fan(false);
+//	robot.setStepperAngle(90);
+//	int angle;
+//	int reading;
+//	int max = 1024;
+//	int maxangle = 0;
+//	for (int x = 0; x < 13; x++){
+//		flamedata[x] = 1024;
+//		angle = 15 * x - 90;
+//		for (int y = 60; y <= 120; y+= 10){
+//			servo.write(y);
+//			reading = analogRead(flame_pin);
+//			if (reading  < flamedata[x]){
+//				flamedata[x] = reading;
+//			}
+//			delay(100);
+//		}
+////		flamedata[x] = analogRead(flame_pin);
+//		Serial.print("flame, ");
+//		Serial.print(flamedata[x]);
+//		Serial.print(", angle, ");
+//		Serial.print(angle);
+//
+//		if (flamedata[x] < max){
+//			maxangle = angle;
+//			max = flamedata[x];
+//			Serial.print(", max");
+//		}
+//		Serial.println();
+//	}
+//	Serial.print("maxangle, ");
+//	Serial.print(maxangle);
+//	Serial.print(", max, ");
+//	Serial.println(max);
+//	if (maxangle <= 0){
+//		if (max < 600){
+////			return true;//maybe also return the 45 deg thingy
+//			if (maxangle < - 45){
+//				return LEFT;
+//			}
+//			return FORWARD;
+//		}
+//	}
+//	return CONTINUE;
+//}
 
 bool getFlameHeight(){
 //trig math taking into account the offset of the flame sensor away from the fan
@@ -178,7 +199,8 @@ void loop() {
 //		Serial.println(x);
 //		delay(1000);
 //	}
-	Serial.println(analogRead(flame_pin));
+//	Serial.println(analogRead(flame_pin));
+
 //	robot.fan(true);
 //	delay(1000);
 //	robot.fan(false);
