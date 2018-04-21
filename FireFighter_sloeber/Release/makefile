@@ -12,6 +12,11 @@ RM := del
 -include libraries\Wire\src\utility\subdir.mk
 -include libraries\Wire\src\subdir.mk
 -include libraries\Ultrasonic\src\subdir.mk
+-include libraries\Servo\src\stm32f4\subdir.mk
+-include libraries\Servo\src\samd\subdir.mk
+-include libraries\Servo\src\sam\subdir.mk
+-include libraries\Servo\src\nrf52\subdir.mk
+-include libraries\Servo\src\avr\subdir.mk
 -include libraries\QTRSensors\subdir.mk
 -include libraries\L3G\subdir.mk
 -include libraries\Encoder\subdir.mk

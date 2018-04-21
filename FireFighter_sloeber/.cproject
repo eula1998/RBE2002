@@ -29,6 +29,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Ultrasonic/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Wire/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Servo}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Servo/src}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.cpp.sketch.input.1352037556" name="CPP source files" superClass="io.sloeber.compiler.cpp.sketch.input"/>
 							</tool>
@@ -44,6 +46,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Ultrasonic/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Wire/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Servo}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Servo/src}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.c.sketch.input.16440597" name="C Source Files" superClass="io.sloeber.compiler.c.sketch.input"/>
 							</tool>
@@ -59,6 +63,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Ultrasonic/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Wire/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Servo}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FireFighter_sloeber/libraries/Servo/src}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.S.sketch.input.1482799249" name="Assembly source files" superClass="io.sloeber.compiler.S.sketch.input"/>
 							</tool>

@@ -4,6 +4,7 @@
 #include "Wire.h"
 #include <Arduino.h>
 #include "Robot.h"
+#include <Servo.h>
 
 #define FRAME (40) // gyro heading refresh rate, in millis
 //#define FRAME (1000)
@@ -25,7 +26,7 @@ Robot robot;
 L3G gyro;
 
 //stores the current accumulated heading read by the current frame
-double heading;
+//double heading;
 double zero;
 double global_heading;
 
@@ -36,7 +37,7 @@ bool usegyro;
  * reset the accumulated heading to zero and get ready for the next read
  */
 void zeroHeading() {
-	heading = 0;
+//	heading = 0;
 	usegyro = true;
 	Serial.println("Resetting");
 }
@@ -53,16 +54,53 @@ double getHeading() {
 	//positive = CCW
 	if (((int) gyro.g.x > 0 ? (int) gyro.g.x : -gyro.g.x) > 500) {
 		global_heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
-		heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
+//		heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
 	}
 	return global_heading;
-	return heading;
+//	return heading;
 }
 
 //==================================================
-//===                   MAIN                     ===
+//===           SERVO + FLAME DETECTION          ===
 //==================================================
 
+Servo servo;
+//up = 180, down = 0
+static int servopin = 9;
+int flamedata[13];
+int flame_pin = A0;
+
+bool checkFlame(){
+	servo.write(90);
+	robot.fan(false);
+	robot.setStepperAngle(90);
+	int angle;
+	int max = 1024;
+	int maxangle = 0;
+	for (int x = 0; x < 13; x++){
+		angle = 15 * x - 90;
+		flamedata[x] = analogRead(flame_pin);
+		if (flamedata[x] < max){
+			maxangle = angle;
+			max = flamedata[x];
+		}
+	}
+	if (maxangle <= 0){
+		if (max < 300){
+			return true;//maybe also return the 45 deg thingy
+		}
+	}
+	return false;
+}
+
+bool getFlameHeight(){
+//trig math taking into account the offset of the flame sensor away from the fan
+	return false;
+}
+
+//==================================================
+//===   		        MAIN 			         ===
+//==================================================
 void setup() {
 	Serial.begin(115200); //stay there for the gyro's sake
 	//GYRO
@@ -84,6 +122,8 @@ void setup() {
 		delay(25);
 	}
 	zero = calibration / 100.0;
+
+	servo.attach(servopin);
 
   usegyro = false;
 //	zeroHeading();
@@ -123,10 +163,16 @@ void loop() {
 //		break;
 //	}
 ////	Serial.println(temp);
-	for (int x = -90; x <= 90; x+= 15){
-		robot.setStepperAngle(x);
-		delay(500);
-	}
+
+//	for (int x = 0; x <= 180; x+=15){
+//		servo.write(x);
+//		Serial.println(x);
+//		delay(1000);
+//	}
+	robot.fan(true);
+	delay(1000);
+	robot.fan(false);
+	Serial.println("fan off");
 	delay(500000);
 
 //do what needs to be done in a frame

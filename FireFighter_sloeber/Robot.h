@@ -28,30 +28,41 @@ public:
 
 	bool turn(int degree, bool CCW, int maxspeed, double currHeading);
 
-	double readLeft(); //in inches
-	double readRight(); //in inches
 	bool driveDist(int speed, int distance); //distance in inch //not tested yet
 	RightAlign rightAlign(int maxspeed);
 	void resetEnc();
 	void updateCoor(double heading); //given a global heading, calculate the x and y displacement
-	void setStepperAngle(int deg);
+	void setStepperAngle(int deg); //blocking
+
+	void servoDeg(int input);
+
+	int readUsFront();
+
+	void fan(bool on);
+
 private:
 	PololuMotor motorright;
 	PololuMotor motorleft;
-	PID imuPID;
+
 	Encoder rightEnc;
 	Encoder leftEnc;
-	double encFactor = 0.0016198837120072371385823004945; //  2.75in * PI / 3200 tick/rev * 3 / 5
+
+	PID imuPID;
+
+	double ideal_heading;
+
 	Ultrasonic usFront;
 	Ultrasonic usRight;
-	bool isRight();
 
 	bool isFront();
 
 	double x;
 	double y;
-	double ideal_heading;
+	double readLeftEnc(); //in encoder in inches
+	double readRightEnc(); //in encoder in inches
+
 	StepperMotor stepper;
+
 };
 
 #endif /* POLOLUMOTOR_H_ */

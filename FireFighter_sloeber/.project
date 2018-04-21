@@ -57,6 +57,11 @@
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/QTRSensors/3.0.0</locationURI>
 		</link>
 		<link>
+			<name>libraries/Servo</name>
+			<type>2</type>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/Servo/1.1.2</locationURI>
+		</link>
+		<link>
 			<name>libraries/Ultrasonic</name>
 			<type>2</type>
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/Ultrasonic/2.1.0</locationURI>

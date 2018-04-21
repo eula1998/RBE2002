@@ -25,13 +25,20 @@ static int lencoder2 = 19;
 static int usf_in = 27, usf_out = 26;
 static int usr_in = 29, usr_out = 28;
 
+static int fan_pin = 4;
+
+static double encFactor = 0.0016198837120072371385823004945; //  2.75in * PI / 3200 tick/rev * 3 / 5
 
 
 Robot::Robot() :
-		motorright(rmotorpinF, rmotorpinB), motorleft(lmotorpinF, lmotorpinB), imuPID(
-				17, 0.05, 15), rightEnc(rencoder1, rencoder2), leftEnc(
-				lencoder1, lencoder2), usFront(usf_in, usf_out), usRight(usr_in,
-				usr_out), y(0), x(0), stepper(25, 23), ideal_heading(0) {
+		motorright(rmotorpinF, rmotorpinB), motorleft(lmotorpinF, lmotorpinB),
+		rightEnc(rencoder1, rencoder2), leftEnc(lencoder1, lencoder2),
+		imuPID(17, 0.05, 15),
+		ideal_heading(0),
+		usFront(usf_in, usf_out), usRight(usr_in,usr_out),
+		y(0), x(0),
+		stepper(25, 23){
+
 }
 
 Robot::~Robot() {
@@ -46,7 +53,6 @@ void Robot::drive(int leftspeed, int rightspeed) {
 	this->motorleft.drive(-leftspeed);
 	this->motorright.drive(rightspeed);
 }
-
 
 bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 	int target_heading = ideal_heading + (degree * (CCW ? 1 : -1));
@@ -70,8 +76,8 @@ bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 }
 
 bool Robot::driveDist(int speed, int distance) {
-	int s = (distance - readLeft()) / distance * speed + 30; //30 is the base speed
-	if (distance > readLeft()) {
+	int s = (distance - readLeftEnc()) / distance * speed + 30; //30 is the base speed
+	if (distance > readLeftEnc()) {
 		drive(s, s);
 		return false;
 	}
@@ -81,12 +87,12 @@ bool Robot::driveDist(int speed, int distance) {
 }
 
 RightAlign Robot::rightAlign(int maxspeed) {
-	if (isFront()){
+	if (isFront()) {
 		drive(0, 0);
 		return TURNLEFT;
-	}else if(usRight.distanceRead() > 70){
+	} else if (usRight.distanceRead() > 70) {
 		return TURNRIGHT;
-	}else{
+	} else {
 //		int s = (usFront.distanceRead() - 15) / 100 * maxspeed + 30;
 		int s = maxspeed;
 		//if deviated away from the wall, tilt right until within range again
@@ -97,7 +103,6 @@ RightAlign Robot::rightAlign(int maxspeed) {
 //	else if (usRight.distanceRead() < 5){
 //
 //	}
-
 
 //	else if (isRight()){//need to change
 ////		int s = (usFront.distanceRead() - 15) / 100 * maxspeed + 30;
@@ -112,16 +117,21 @@ RightAlign Robot::rightAlign(int maxspeed) {
 //	}
 }
 
-bool Robot::isRight(){
-	return usRight.distanceRead() < 15; //also need line follower readings
+bool Robot::isFront() {
+	return usFront.distanceRead() < 15; //also need line follower readings
 }
 
-bool Robot::isFront(){
-	return usFront.distanceRead() < 15;//also need line follower readings
+void Robot::setStepperAngle(int deg) {
+	stepper.turnTo((double) deg);
 }
 
-void Robot::setStepperAngle(int deg){
-	stepper.turnTo((double)deg);
+int Robot::readUsFront(){
+	return usFront.distanceRead();
+}
+
+void Robot::fan(bool on){
+	int control = on? 255 : 0;
+	digitalWrite(fan_pin, control);
 }
 
 //==================================================
@@ -137,12 +147,12 @@ void Robot::resetEnc() {
 	delay(100);
 }
 
-double Robot::readLeft() {
+double Robot::readLeftEnc() {
 	return (double) leftEnc.read() * encFactor;
 //	return usFront.distanceRead();
 }
 
-double Robot::readRight() {
+double Robot::readRightEnc() {
 	return (double) rightEnc.read() * encFactor;
 //	return usRight.distanceRead();
 }
