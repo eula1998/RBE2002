@@ -16,6 +16,7 @@ void loop() {
   int flameSensorReading = analogRead(A0);   // read sensor on pin A0
 
   Serial.println(flameSensorReading);     // print sensor reading to serial 
+  delay(100);
   // map sensor range 0-3 ft
   //int range = map(flameSensorReading, flameSensorMin, flameSensorMax,  0, 3);
 }

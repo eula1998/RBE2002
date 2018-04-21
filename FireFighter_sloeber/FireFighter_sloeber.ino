@@ -6,8 +6,8 @@
 #include "Robot.h"
 #include <Servo.h>
 
-#define FRAME (40) // gyro heading refresh rate, in millis
-//#define FRAME (1000)
+//#define FRAME (40) // gyro heading refresh rate, in millis
+#define FRAME (1000)
 
 /**
  * encoder left: 2, 23
@@ -16,6 +16,8 @@
  * right: in: 29 out: 28
  * stepper pwn: 25
  * button: 22
+ * line follower (front) 3, 5: a1, a2
+ * line follower (right) 7, 8: a3, a4
  */
 Robot robot;
 
@@ -80,10 +82,16 @@ bool checkFlame(){
 	for (int x = 0; x < 13; x++){
 		angle = 15 * x - 90;
 		flamedata[x] = analogRead(flame_pin);
+		Serial.print("flame, ");
+		Serial.print(flamedata[x]);
+		Serial.print(", angle, ");
+		Serial.print(angle);
 		if (flamedata[x] < max){
 			maxangle = angle;
 			max = flamedata[x];
+			Serial.print(", max");
 		}
+		Serial.println();
 	}
 	if (maxangle <= 0){
 		if (max < 300){
@@ -124,6 +132,7 @@ void setup() {
 	zero = calibration / 100.0;
 
 	servo.attach(servopin);
+	servo.write(90);
 
   usegyro = false;
 //	zeroHeading();
@@ -169,11 +178,12 @@ void loop() {
 //		Serial.println(x);
 //		delay(1000);
 //	}
-	robot.fan(true);
-	delay(1000);
-	robot.fan(false);
-	Serial.println("fan off");
-	delay(500000);
+	Serial.println(analogRead(flame_pin));
+//	robot.fan(true);
+//	delay(1000);
+//	robot.fan(false);
+//	Serial.println("fan off");
+//	delay(500000);
 
 //do what needs to be done in a frame
 	//set frame rate for gyro and everything else

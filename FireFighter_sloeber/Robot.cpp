@@ -27,6 +27,9 @@ static int usr_in = 29, usr_out = 28;
 
 static int fan_pin = 4;
 
+static int front3_pin = A1, front5_pin = A2;
+static int right7_pin = A3, right8_pin = A4;
+
 static double encFactor = 0.0016198837120072371385823004945; //  2.75in * PI / 3200 tick/rev * 3 / 5
 
 
@@ -118,7 +121,15 @@ RightAlign Robot::rightAlign(int maxspeed) {
 }
 
 bool Robot::isFront() {
-	return usFront.distanceRead() < 15; //also need line follower readings
+	return usFront.distanceRead() < 15 && isFrontLine(); //also need line follower readings
+}
+
+bool Robot::isFrontLine() {
+	return analogRead(front3_pin)  > 200  && analogRead(front5_pin)  > 200; //also need line follower readings
+}
+
+bool Robot::isRightLine(){
+	return analogRead(right7_pin) > 200 && analogRead(right8_pin) > 200;
 }
 
 void Robot::setStepperAngle(int deg) {

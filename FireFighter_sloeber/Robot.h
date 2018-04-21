@@ -55,6 +55,8 @@ private:
 	Ultrasonic usRight;
 
 	bool isFront();
+	bool isFrontLine();
+	bool isRightLine();
 
 	double x;
 	double y;
