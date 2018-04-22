@@ -19,6 +19,11 @@
 typedef enum {
 	TURNLEFT, TURNRIGHT, ALRIGHT
 } RightAlign;
+
+typedef enum {
+	LEFT, FORWARD, CONTINUE
+} FlameStatus;
+
 class Robot {
 public:
 	Robot();
