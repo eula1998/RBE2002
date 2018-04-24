@@ -52,6 +52,11 @@
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/L3G/3.0.0</locationURI>
 		</link>
 		<link>
+			<name>libraries/LiquidCrystal</name>
+			<type>2</type>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/LiquidCrystal/1.0.7</locationURI>
+		</link>
+		<link>
 			<name>libraries/QTRSensors</name>
 			<type>2</type>
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/QTRSensors/3.0.0</locationURI>

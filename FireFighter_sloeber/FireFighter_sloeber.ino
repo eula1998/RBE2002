@@ -5,11 +5,15 @@
 #include <Arduino.h>
 #include "Robot.h"
 #include <Servo.h>
+#include <LiquidCrystal.h>
+#include <Math.h>
 
 #define FRAME (40) // gyro heading refresh rate, in millis
 //#define FRAME (1000)
 
 Robot robot;
+const int rs = 40, en = 41, d4 = 42, d5 = 43, d6 = 44, d7 = 45;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 //==================================================
 //===                   GYRO                     ===
@@ -56,19 +60,23 @@ double getHeading() {
 //===           SERVO + FLAME DETECTION          ===
 //==================================================
 
-
-
 Servo servo;
 //up = 180, down = 0
 static int servopin = 8;
 int flamedata[13];
-int flame_pin = A0;
-
+const int flame_pin = A0;
+const double delta_fan_flame_dist = 2.0; //inch *********PLS CHANGE**********
+const double axle_height = 8.25;//in
+const double us_fix_dist = 2.0;
+const double us_stepcenter_dist = 2.5; //inch *********PLS CHANGE**********
+//TO BE CALCULATED - kinda like registers
+int delta_fan_flame_angle;
+double flame_height;
 
 FlameStatus checkFlame(){
-//	servo.write(90);
+	servo.write(90);
 	robot.fan(false);
-	robot.setStepperAngle(90);
+	robot.setStepperAngle(-90);
 	int angle;
 	int reading;
 	int max = 1024;
@@ -76,7 +84,8 @@ FlameStatus checkFlame(){
 	for (int x = 0; x < 13; x++){
 		flamedata[x] = 1024;
 		angle = 15 * x - 90;
-		for (int y = 60; y <= 120; y+= 10){
+		robot.setStepperAngle(angle);
+		for (int y = 60; y <= 120; y+= 15){
 			servo.write(y);
 			reading = analogRead(flame_pin);
 			if (reading  < flamedata[x]){
@@ -102,9 +111,9 @@ FlameStatus checkFlame(){
 	Serial.print(", max, ");
 	Serial.println(max);
 	if (maxangle <= 0){
-		if (max < 600){
+		if (max < 500){
 //			return true;//maybe also return the 45 deg thingy
-			if (maxangle < - 45){
+			if (maxangle < -45){
 				return LEFT;
 			}
 			return FORWARD;
@@ -113,9 +122,58 @@ FlameStatus checkFlame(){
 	return CONTINUE;
 }
 
-bool getFlameHeight(){
+void getFlameHeight(int maxangle){//
 //trig math taking into account the offset of the flame sensor away from the fan
-	return false;
+//	delta_fan_flame
+	double candle_dist = us_fix_dist + us_stepcenter_dist;//in inches
+	flame_height = sin((double)(maxangle - 90)/180*2*M_PI) * candle_dist;
+	int hypothenue = hypot(flame_height, candle_dist);//in inches
+	delta_fan_flame_angle = atan(delta_fan_flame_dist/hypothenue);
+	if (maxangle < 90){
+		delta_fan_flame_angle *= -1;
+	}
+}
+
+void blowOutFlame(){
+	int max = 1024;
+	int maxangle = 0;
+	int flamedata[13];
+	int angle;
+	bool repeat;
+	do {
+		repeat = false;
+		for (int x = 0; x < 13; x++) {
+			angle = 60 + 5 * x;
+			servo.write(angle);
+			flamedata[x] = analogRead(flame_pin);
+			Serial.print("flame, ");
+			Serial.print(flamedata[x]);
+			Serial.print(", angle, ");
+			Serial.print(angle);
+			if (max > flamedata[x]) {
+				max = flamedata[x];
+				maxangle = angle;
+				Serial.print(", max");
+			}
+			Serial.println();
+			delay(100);
+		}
+		Serial.print("maxangle, ");
+		Serial.print(maxangle);
+		Serial.print(", max, ");
+		Serial.println(max);
+		getFlameHeight(maxangle);
+		servo.write(maxangle + delta_fan_flame_angle);
+		robot.fan(true);
+		delay(5000);
+		robot.fan(false);
+		servo.write(maxangle);
+		if (analogRead(flame_pin) < 500){
+			repeat = true;
+		}
+	}while(repeat);
+	lcd.setCursor(0, 1);
+	lcd.print("Flame Out!!!!!");
 }
 
 //==================================================
@@ -123,6 +181,8 @@ bool getFlameHeight(){
 //==================================================
 void setup() {
 	Serial.begin(115200); //stay there for the gyro's sake
+
+	lcd.begin(16, 2);
 	//GYRO
 	Wire.begin();
 	//keeps polling the gyro status
@@ -192,11 +252,22 @@ void loop() {
 //	}
 //	Serial.println(analogRead(flame_pin));
 
+//	lcd.setCursor(0, 1);
+//	lcd.print("Hi");
+//
 //	robot.fan(true);
 //	delay(1000);
 //	robot.fan(false);
-//	Serial.println("fan off");
-//	delay(500000);
+//	Serial.println("fan Off");
+//	while(1){
+//		robot.fan(false);
+//	}
+
+//	servo.write(90);
+	checkFlame();
+//	robot.setStepperAngle(90);
+	delay(500000);
+
 
 //do what needs to be done in a frame
 	//set frame rate for gyro and everything else

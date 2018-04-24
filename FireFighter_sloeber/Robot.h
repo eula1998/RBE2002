@@ -31,6 +31,8 @@ public:
 
 	void drive(int leftspeed, int rightspeed);
 
+	void stop();
+
 	bool turn(int degree, bool CCW, int maxspeed, double currHeading);
 
 	bool driveDist(int speed, int distance); //distance in inch //not tested yet

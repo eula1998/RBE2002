@@ -26,7 +26,7 @@ static int lencoder2 = 19; //an interrupt pin //white
 static int usf_in = 25, usf_out = 26; //digital pins
 static int usr_in = 23, usr_out = 24; //digital pins
 
-//static int fan_pin = 4;
+static int fan_pin = 29;
 
 static int front3_pin = A3, front5_pin = A4; //analog pins
 static int right7_pin = A1, right8_pin = A2; //analog pins
@@ -87,16 +87,17 @@ static double Cos(double deg){
 }
 
 
-Robot::Robot() :
+Robot::Robot():
 		motorright(rmotorpinF, rmotorpinB), motorleft(lmotorpinF, lmotorpinB),
 		rightEnc(rencoder1, rencoder2), leftEnc(lencoder1, lencoder2),
 		imuPID(17, 0.05, 15),
 		ideal_heading(0),
 		usFront(usf_in, usf_out), usRight(usr_in,usr_out),
-		y(0), x(0),
+		x(0), y(0),
 		lastLeftEnc(0), lastRightEnc(0),
 		stepper(stepper_step_pin, stepper_dir_pin){
-
+	pinMode(fan_pin, OUTPUT);
+	digitalWrite(fan_pin, LOW);
 }
 
 Robot::~Robot() {
@@ -206,10 +207,15 @@ double Robot::readUsRight(){
 }
 
 void Robot::fan(bool on){
-//	int control = on? HIGH : LOW;
-//	digitalWrite(fan_pin, control);
+	int control = on? LOW : HIGH;
+	digitalWrite(fan_pin, control);
+	Serial.print("fan");
+	Serial.println(control);
 }
 
+void Robot::stop(){
+	drive(0, 0);
+}
 //==================================================
 //===                ENCODER                     ===
 //==================================================
