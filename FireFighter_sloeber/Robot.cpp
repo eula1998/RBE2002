@@ -93,7 +93,7 @@ Robot::Robot():
 		imuPID(17, 0.05, 15),
 		ideal_heading(0),
 		usFront(usf_in, usf_out), usRight(usr_in,usr_out),
-		x(0), y(0),
+		x(0.0), y(0.0),
 		lastLeftEnc(0), lastRightEnc(0),
 		stepper(stepper_step_pin, stepper_dir_pin){
 	pinMode(fan_pin, OUTPUT);

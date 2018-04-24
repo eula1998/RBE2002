@@ -65,10 +65,10 @@ Servo servo;
 static int servopin = 8;
 int flamedata[13];
 const int flame_pin = A0;
-const double delta_fan_flame_dist = 2.0; //inch *********PLS CHANGE**********
-const double axle_height = 8.25;//in
+const double delta_fan_flame_dist = 1.875; //inch
+const double fan_height = 8.25;//in ground to fan axle
 const double us_fix_dist = 2.0;
-const double us_stepcenter_dist = 2.5; //inch *********PLS CHANGE**********
+const double us_stepcenter_dist = 2.875; //inch *********PLS CHANGE**********
 //TO BE CALCULATED - kinda like registers
 int delta_fan_flame_angle;
 double flame_height;
@@ -124,14 +124,16 @@ FlameStatus checkFlame(){
 
 void getFlameHeight(int maxangle){//
 //trig math taking into account the offset of the flame sensor away from the fan
-//	delta_fan_flame
+
 	double candle_dist = us_fix_dist + us_stepcenter_dist;//in inches
-	flame_height = sin((double)(maxangle - 90)/180*2*M_PI) * candle_dist;
+	flame_height = sin((double)(maxangle - 90)/180*2*M_PI) * candle_dist + fan_height;
 	int hypothenue = hypot(flame_height, candle_dist);//in inches
 	delta_fan_flame_angle = atan(delta_fan_flame_dist/hypothenue);
 	if (maxangle < 90){
 		delta_fan_flame_angle *= -1;
 	}
+	Serial.print("Flame height, ");
+	Serial.println(flame_height);
 }
 
 void blowOutFlame(){
@@ -172,8 +174,8 @@ void blowOutFlame(){
 			repeat = true;
 		}
 	}while(repeat);
-	lcd.setCursor(0, 1);
-	lcd.print("Flame Out!!!!!");
+//	lcd.setCursor(0, 1);
+//	lcd.print("Flame Out!!!!!");
 }
 
 //==================================================
@@ -255,18 +257,18 @@ void loop() {
 //	lcd.setCursor(0, 1);
 //	lcd.print("Hi");
 //
-//	robot.fan(true);
-//	delay(1000);
-//	robot.fan(false);
-//	Serial.println("fan Off");
+	robot.fan(true);
+	delay(1000);
+	robot.fan(false);
+	Serial.println("fan Off");
 //	while(1){
 //		robot.fan(false);
 //	}
 
 //	servo.write(90);
-	checkFlame();
+//	blowOutFlame();
 //	robot.setStepperAngle(90);
-	delay(500000);
+	delay(500000);//
 
 
 //do what needs to be done in a frame
