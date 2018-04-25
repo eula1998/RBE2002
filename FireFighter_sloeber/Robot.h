@@ -17,7 +17,7 @@
 #include "StepperMotor.h"
 
 typedef enum {
-	TURNLEFT, TURNRIGHT, ALRIGHT
+	TURNLEFT, TURNRIGHT, ALRIGHT, ONCLIFF
 } RightAlign;
 
 typedef enum {
@@ -36,12 +36,20 @@ public:
 	bool turn(int degree, bool CCW, int maxspeed, double currHeading);
 
 	bool driveDist(int speed, int distance); //distance in inch //not tested yet
+	bool driveForward(int speed);
+
 	RightAlign rightAlign(int maxspeed);
 	void resetEnc();
 	void updateCoor(double heading); //given a global heading, calculate the x and y displacement
 	void setStepperAngle(int deg); //blocking
 
 	void servoDeg(int input);
+
+	bool isFrontUS();
+	bool isRightUS();
+	bool isFrontLine();
+
+	bool isRightLine();
 
 	double readUsFront();
 
@@ -51,6 +59,11 @@ public:
 
 	double readLeftEnc(); //in encoder in inches
 	double readRightEnc(); //in encoder in inches
+
+	double getX();
+	double getY();
+
+	bool buttonPressed();
 private:
 	PololuMotor motorright;
 	PololuMotor motorleft;
@@ -65,16 +78,10 @@ private:
 	Ultrasonic usFront;
 	Ultrasonic usRight;
 
-	bool isFront();
 
-	bool isFrontLine();
-
-	bool isRightLine();
 
 	double x;
 	double y;
-//	double readLeftEnc(); //in encoder in inches
-//	double readRightEnc(); //in encoder in inches
 	double lastLeftEnc;
 	double lastRightEnc;
 

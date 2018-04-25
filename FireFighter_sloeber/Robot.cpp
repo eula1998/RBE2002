@@ -11,30 +11,33 @@
 #include "Arduino.h"
 #include "LookUpTable.h"
 
-static int rmotorpinF = 5; //forward pin // in1
-static int rmotorpinB = 4; //backward pin //in2
+static const int rmotorpinF = 5; //forward pin // in1
+static const int rmotorpinB = 4; //backward pin //in2
 
-static int lmotorpinF = 7; //forward pin //in1
-static int lmotorpinB = 6; //backward pin //in2
+static const int lmotorpinF = 7; //forward pin //in1
+static const int lmotorpinB = 6; //backward pin //in2
 
-static int rencoder1 = 2; //an interrupt pin //yellow
-static int rencoder2 = 3; //an interrupt pin //white
+static const int rencoder1 = 2; //an interrupt pin //yellow
+static const int rencoder2 = 3; //an interrupt pin //white
 
-static int lencoder1 = 18; //an interrupt pin //yellow
-static int lencoder2 = 19; //an interrupt pin //white
+static const int lencoder1 = 18; //an interrupt pin //yellow
+static const int lencoder2 = 19; //an interrupt pin //white
 
-static int usf_in = 25, usf_out = 26; //digital pins
-static int usr_in = 23, usr_out = 24; //digital pins
+static const int usf_in = 25, usf_out = 26; //digital pins
+static const int usr_in = 23, usr_out = 24; //digital pins
 
-static int fan_pin = 29;
+static const int fan_pin = 12;
 
-static int front3_pin = A3, front5_pin = A4; //analog pins
-static int right7_pin = A1, right8_pin = A2; //analog pins
+static const int front3_pin = A3, front5_pin = A4; //analog pins
+static const int right7_pin = A1, right8_pin = A2; //analog pins
 
-static int stepper_step_pin = 28;
-static int stepper_dir_pin = 27;
+static const int stepper_step_pin = 28;
+static const int stepper_dir_pin = 27;
+
+static const int button_pin = 22;;
 
 static double encFactor = 0.0016198837120072371385823004945; //  2.75in * PI / 3200 tick/rev * 3 / 5
+
 
 static double Sin(double deg){
 	int degree = deg;
@@ -98,6 +101,7 @@ Robot::Robot():
 		stepper(stepper_step_pin, stepper_dir_pin){
 	pinMode(fan_pin, OUTPUT);
 	digitalWrite(fan_pin, LOW);
+	pinMode(button_pin, INPUT_PULLUP);
 }
 
 Robot::~Robot() {
@@ -116,7 +120,10 @@ void Robot::drive(int leftspeed, int rightspeed) {
 bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 	int target_heading = ideal_heading + (degree * (CCW ? 1 : -1));
 	int speed = imuPID.calc(target_heading, currentHeading, maxspeed);
-//	Serial.print(", target, ");
+
+//	int speed = imuPID.calc(degree * CCW? 1 : -1, currentHeading, maxspeed);
+
+	//	Serial.print(", target, ");
 //	Serial.print(target_heading);
 //	Serial.print(", ideal, ");
 //	Serial.print(ideal_heading);
@@ -136,6 +143,11 @@ bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 }
 
 bool Robot::driveDist(int speed, int distance) {
+	if (isFrontLine()){
+		drive(0, 0);
+		return true;
+	}
+
 	int s = (distance - readLeftEnc()) / distance * speed + 30; //30 is the base speed
 	if (distance > readLeftEnc()) {
 		drive(s, s);
@@ -146,18 +158,40 @@ bool Robot::driveDist(int speed, int distance) {
 	return true;
 }
 
+bool Robot::driveForward(int speed){
+	if (isFrontLine()){
+		drive(0, 0);
+		return true;
+	}
+	if (readUsFront() < 8){
+		drive(0, 0);
+		return true;
+	}
+	drive(speed, speed);
+	return false;
+}
+
 RightAlign Robot::rightAlign(int maxspeed) {
-	if (isFront()) {
+	if (isFrontLine()) {
+		drive(0, 0);
+		return ONCLIFF;
+	} else if(isFrontUS()){
 		drive(0, 0);
 		return TURNLEFT;
-	} else if (usRight.distanceRead() > 70) {
+	}else if (readUsRight() > 30) {//field is ~ 80 inch
+		drive(0, 0);
 		return TURNRIGHT;
 	} else {
 //		int s = (usFront.distanceRead() - 15) / 100 * maxspeed + 30;
 		int s = maxspeed;
 		//if deviated away from the wall, tilt right until within range again
-
-		drive(s, s);
+		if (usRight.distanceRead() > 20){//distance is greater than 20 cm
+			drive(s*1.05, s * 0.95);
+		}else if(usRight.distanceRead() < 10){
+			drive(s * 0.95, s * 1.05);
+		}else{
+			drive(s, s);
+		}
 		return ALRIGHT;
 	}
 //	else if (usRight.distanceRead() < 5){
@@ -177,12 +211,27 @@ RightAlign Robot::rightAlign(int maxspeed) {
 //	}
 }
 
-bool Robot::isFront() {
-	return readUsFront() < 2.0 && isFrontLine(); //also need line follower readings
+//==================================================
+//===            MISCELLANEOUS CHECKS            ===
+//==================================================
+
+bool Robot::isFrontUS() {
+	int reading = readUsFront();
+	Serial.print("us front (in): ");
+	Serial.println(reading);
+	return reading < 3.0 && reading != 0;
+}
+
+bool Robot::isRightUS(){
+	int reading = readUsRight();
+	Serial.print("us right (in): ");
+	Serial.println(reading);
+	return readUsRight() < 5.0 && reading != 0;
 }
 
 /**
- * need to change
+ * white board = ~110
+ * black = 1023
  */
 bool Robot::isFrontLine() {
 	return analogRead(front3_pin)  > 200  && analogRead(front5_pin)  > 200; //also need line follower readings
@@ -198,16 +247,22 @@ void Robot::setStepperAngle(int deg) {
 
 // return in inches
 double Robot::readUsFront(){
-	return ((double)usFront.distanceRead() - 2.50) / 2.54;
+	Serial.print("us front (cm): ");
+	double reading = usFront.distanceRead();
+	Serial.print(reading);
+	return ((double)reading - 2.50) / 2.54;
 }
 
 // return in inches
 double Robot::readUsRight(){
-	return ((double)usRight.distanceRead() - 2.50) / 2.54;
+	Serial.print("us right (cm): ");
+	double reading = usRight.distanceRead();
+	Serial.print(reading);
+	return ((double)reading - 2.50) / 2.54;
 }
 
 void Robot::fan(bool on){
-	int control = on? LOW : HIGH;
+	int control = on? HIGH : LOW;
 	digitalWrite(fan_pin, control);
 	Serial.print("fan");
 	Serial.println(control);
@@ -216,6 +271,11 @@ void Robot::fan(bool on){
 void Robot::stop(){
 	drive(0, 0);
 }
+
+bool Robot::buttonPressed(){
+	return !digitalRead(button_pin);//LOW = pressed
+}
+
 //==================================================
 //===                ENCODER                     ===
 //==================================================
@@ -247,4 +307,13 @@ void Robot::updateCoor(double heading){
 	y += delta * Cos(heading);
 	lastLeftEnc = readLeftEnc();
 	lastRightEnc = readRightEnc();
+}
+
+
+double Robot::getX(){
+	return x;
+}
+
+double Robot::getY(){
+	return y;
 }

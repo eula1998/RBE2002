@@ -52,6 +52,11 @@
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/L3G/3.0.0</locationURI>
 		</link>
 		<link>
+			<name>libraries/LSM303</name>
+			<type>2</type>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/LSM303/3.0.1</locationURI>
+		</link>
+		<link>
 			<name>libraries/LiquidCrystal</name>
 			<type>2</type>
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/LiquidCrystal/1.0.7</locationURI>
