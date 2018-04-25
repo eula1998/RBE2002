@@ -681,33 +681,12 @@ void loop() {
 //	}
 ////	Serial.println(temp);
 
-//	for (int x = 0; x <= 180; x+=15){
-//		servo.write(x);
-//		Serial.println(x);
-//		delay(1000);
-//	}
-//	Serial.println(analogRead(flame_pin));
-
-//	lcd.setCursor(0, 1);
-//	lcd.print("Hi");
-
 //	robot.fan(true);
 //	delay(5000);
 //	robot.fan(false);
 //	robot.setStepperAngle(75);
 //	robot.setStepperAngle(105);
 //	Serial.println("fan Off");
-
-//	digitalWrite(12, HIGH);
-
-//	servo.write(90);
-//	blowOutFlame();
-//	robot.setStepperAngle(90);
-//	Serial.println(robot.readUsFront());
-//	checkFlame();
-//	servo.write(45);
-//	delay(500000);
-//	delay(1000);
 
 	//=========== STATE MACHINE================
 	lcd.setCursor(0, 0);
@@ -735,15 +714,15 @@ void loop() {
 		break;
 	case FORWARD2IN:
 		lcd.print("FORWARD 2IN");
-//		forward2in();
+		forward2in();
 		break;
 	case BACKWARD2IN:
 		lcd.print("BACKWARD 2IN");
-//		backward2in();
+		backward2in();
 		break;
 	case CLIFF_FORWARD:
 		lcd.print("CLIFF");
-//		cliffForward();
+		cliffForward();
 		break;
 	case FOUND_FLAME:
 		lcd.print("FOUND FLAME");
