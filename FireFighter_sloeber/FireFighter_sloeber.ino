@@ -9,7 +9,7 @@
 #include <Math.h>
 #include <LSM303.h>
 
-#define FRAME (20) // gyro heading refresh rate, in millis
+#define FRAME (20) // gyro heading refresh rate, in millis //was 40
 //#define FRAME (1000) //test
 
 Robot robot;
@@ -291,7 +291,7 @@ int checkflame() {
 	Serial.print(", max, ");
 	Serial.println(max);
 //	if (maxangle <= 0) {
-	if (max < 500) {
+	if (max < 700) {
 		lcd.setCursor(0, 0);
 		lcd.print("FOUND FLAME");
 		lcd.setCursor(0, 1);
@@ -387,7 +387,9 @@ typedef enum {
 	DRIVE_TILL_FLAME,
 	DRIVE_TILL_US,
 	TURN_TO_FLAME,
-	FINISH
+	FINISH,
+	TURNING_AWAY,
+	HEADING_HOME
 } State;
 
 State state;
@@ -576,16 +578,33 @@ void foundFlame() {
 		}
 		break;
 	case FINISH:
-		lcd.clear();
+//		lcd.clear();
+//		lcd.setCursor(0, 0);
+//		lcd.print("Flame loc: ");
 		lcd.setCursor(0, 0);
-		lcd.print("Flame loc: ");
-		lcd.setCursor(0, 1);
 		lcd.print("x:");
-		lcd.print((int)robot.getX());
+		lcd.print(robot.getX());
 		lcd.print("y:");
-		lcd.print((int)robot.getX());
+		lcd.print(robot.getY());
+		lcd.setCursor(0, 1);
 		lcd.print("z:");
-		lcd.print(fan_height);
+		lcd.print(flame_height);
+		wayToFlame = TURNING_AWAY;
+		gyroreset();
+//		robot.resetEnc();
+		break;
+	case TURNING_AWAY:
+		if (robot.turn(180, true, 150, gyro_x)){
+			wayToFlame = HEADING_HOME;
+		}
+		break;
+	case HEADING_HOME:
+		robot.drive(100, 100);
+		if (robot.isFrontUS()){
+			robot.stop();
+//			blowOutFlame();
+			wayToFlame = INITIALIZATION;//stop the state machine
+		}
 		break;
 	default:
 		break;
@@ -710,7 +729,7 @@ void loop() {
 		break;
 	case TURN_RIGHT90:
 		lcd.print("RIGHT 90");
-//		turnRight90();
+		turnRight90();
 		break;
 	case FORWARD2IN:
 		lcd.print("FORWARD 2IN");
