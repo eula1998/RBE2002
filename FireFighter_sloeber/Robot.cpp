@@ -39,6 +39,9 @@ static const int button_pin = 22;;
 static double encFactor = 0.0016198837120072371385823004945; //  2.75in * PI / 3200 tick/rev * 3 / 5
 
 
+static const double turningCircumference = 23.561944901923449288469825374596;
+static const double turningFactor = 0.04244131815783875620503567023267;
+
 static double Sin(double deg){
 	int degree = deg;
 	double difference = deg - (double) degree;
@@ -119,6 +122,9 @@ void Robot::drive(int leftspeed, int rightspeed) {
 
 bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 	int target_heading = ideal_heading + (degree * (CCW ? 1 : -1));
+//	if (firstturn){
+//		degree *= 2;
+//	}
 	int speed = imuPID.calc(target_heading, currentHeading, maxspeed);
 
 //	int speed = imuPID.calc(degree * CCW? 1 : -1, currentHeading, maxspeed);
@@ -136,20 +142,46 @@ bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 		drive(0, 0);
 		ideal_heading = target_heading;
 		resetEnc();
+//		if (!firstturn){
+//			firstturn = true;
+//		}
 		return true;
 	}
 
 	return false;
 }
 
-bool Robot::driveDist(int speed, int distance) {
-	if (isFrontLine()){
+//CCW = positive
+bool Robot::odometryTurn(int degree, bool CCW, int maxspeed){
+	double odometryHeading = (abs(readLeftEnc()) + (abs(readRightEnc()))) * turningFactor * 180 * (CCW? 1 : -1); //(360 / 2)
+	Serial.print("Odometry Heading: ");
+	Serial.println(odometryHeading);
+	int speed = imuPID.calc(degree * (CCW? 1 : -1) , odometryHeading, maxspeed);
+	if (abs(speed) > 20) {
+		drive(-speed, speed);
+	} else {
 		drive(0, 0);
+		resetEnc();
+		ideal_heading += odometryHeading;
 		return true;
 	}
+	return false;
+}
 
-	int s = (distance - readLeftEnc()) / distance * speed + 30; //30 is the base speed
-	if (distance > readLeftEnc()) {
+bool Robot::driveDist(int speed, bool forward, int distance) {
+	if (forward){
+		if (isFrontLine() || isFrontUS()){
+			drive(0, 0);
+			return true;
+		}
+	}
+
+	int s = (distance - abs(readLeftEnc())) / distance * speed + 30; //30 is the base speed
+	s *= forward? 1 : -1;
+	//make sure it drives straight
+//	Serial.print("Dist: ");
+//	Serial.println(readLeftEnc());
+	if (distance > abs(readLeftEnc())) {
 		drive(s, s);
 		return false;
 	}
@@ -163,7 +195,12 @@ bool Robot::driveForward(int speed){
 		drive(0, 0);
 		return true;
 	}
-	if (readUsFront() < 8){
+	delay(20);
+	if (readUsFront() < 3){
+		drive(0, 0);
+		return true;
+	}
+	if (readUsRight() < 10){
 		drive(0, 0);
 		return true;
 	}
@@ -178,16 +215,18 @@ RightAlign Robot::rightAlign(int maxspeed) {
 	} else if(isFrontUS()){
 		drive(0, 0);
 		return TURNLEFT;
-	}else if (readUsRight() > 30) {//field is ~ 80 inch
+	}else if (readUsRight() > 10) {//field is ~ 80 inch
+		delay(750);
 		drive(0, 0);
+		Serial.println("NO MORE WALL");
 		return TURNRIGHT;
 	} else {
 //		int s = (usFront.distanceRead() - 15) / 100 * maxspeed + 30;
 		int s = maxspeed;
 		//if deviated away from the wall, tilt right until within range again
-		if (usRight.distanceRead() > 20){//distance is greater than 20 cm
+		if (usRight.distanceRead() > 7){//distance is greater than 20 cm
 			drive(s*1.05, s * 0.95);
-		}else if(usRight.distanceRead() < 10){
+		}else if(usRight.distanceRead() < 4){
 			drive(s * 0.95, s * 1.05);
 		}else{
 			drive(s, s);
@@ -217,15 +256,15 @@ RightAlign Robot::rightAlign(int maxspeed) {
 
 bool Robot::isFrontUS() {
 	int reading = readUsFront();
-	Serial.print("us front (in): ");
-	Serial.println(reading);
+//	Serial.print("us front (in): ");
+//	Serial.println(reading);
 	return reading < 3.0 && reading != 0;
 }
 
 bool Robot::isRightUS(){
 	int reading = readUsRight();
-	Serial.print("us right (in): ");
-	Serial.println(reading);
+//	Serial.print("us right (in): ");
+//	Serial.println(reading);
 	return readUsRight() < 5.0 && reading != 0;
 }
 
@@ -234,7 +273,13 @@ bool Robot::isRightUS(){
  * black = 1023
  */
 bool Robot::isFrontLine() {
-	return analogRead(front3_pin)  > 200  && analogRead(front5_pin)  > 200; //also need line follower readings
+	int reading3 = analogRead(front3_pin);
+//	Serial.print("front 3: ");
+//	Serial.println(reading3);
+	int reading5 = analogRead(front5_pin);
+//	Serial.print("front 5: ");
+//	Serial.println(reading5);
+	return reading3  > 200  && reading5  > 200; //also need line follower readings
 }
 
 bool Robot::isRightLine(){
@@ -247,18 +292,20 @@ void Robot::setStepperAngle(int deg) {
 
 // return in inches
 double Robot::readUsFront(){
-	Serial.print("us front (cm): ");
+	Serial.print("us front (in): ");
 	double reading = usFront.distanceRead();
-	Serial.print(reading);
-	return ((double)reading - 2.50) / 2.54;
+	reading = (reading - 2.50) / 2.54;
+	Serial.println(reading);
+	return reading;
 }
 
 // return in inches
 double Robot::readUsRight(){
-	Serial.print("us right (cm): ");
+	Serial.print("us right (in): ");
 	double reading = usRight.distanceRead();
-	Serial.print(reading);
-	return ((double)reading - 2.50) / 2.54;
+	reading = (reading - 2.50) / 2.54;
+	Serial.println(reading);
+	return reading;
 }
 
 void Robot::fan(bool on){
@@ -299,12 +346,12 @@ double Robot::readRightEnc() {
 	return (double) rightEnc.read() * encFactor;
 }
 
-void Robot::updateCoor(double heading){
+void Robot::updateCoor(){
 	double currLeftEnc = readLeftEnc();
 	double currRightEnc = readRightEnc();
 	double delta = ((currLeftEnc - lastLeftEnc) + (currRightEnc - lastRightEnc)) / 2;
-	x += delta * Sin(heading);
-	y += delta * Cos(heading);
+	x += delta * Sin(ideal_heading);
+	y += delta * Cos(ideal_heading);
 	lastLeftEnc = readLeftEnc();
 	lastRightEnc = readRightEnc();
 }

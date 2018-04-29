@@ -29,18 +29,21 @@ public:
 	Robot();
 	virtual ~Robot();
 
+
 	void drive(int leftspeed, int rightspeed);
 
 	void stop();
 
 	bool turn(int degree, bool CCW, int maxspeed, double currHeading);
 
-	bool driveDist(int speed, int distance); //distance in inch //not tested yet
+	bool odometryTurn(int degree, bool CCW, int maxspeed);
+
+	bool driveDist(int speed, bool forward, int distance); //distance in inch //not tested yet
 	bool driveForward(int speed);
 
 	RightAlign rightAlign(int maxspeed);
 	void resetEnc();
-	void updateCoor(double heading); //given a global heading, calculate the x and y displacement
+	void updateCoor(); //given a global heading, calculate the x and y displacement
 	void setStepperAngle(int deg); //blocking
 
 	void servoDeg(int input);
@@ -71,14 +74,12 @@ private:
 	Encoder rightEnc;
 	Encoder leftEnc;
 
-	PID imuPID;
 
+	PID imuPID;
 	double ideal_heading;
 
 	Ultrasonic usFront;
 	Ultrasonic usRight;
-
-
 
 	double x;
 	double y;

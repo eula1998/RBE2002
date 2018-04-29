@@ -8,6 +8,7 @@
 #include <LiquidCrystal.h>
 #include <Math.h>
 #include <LSM303.h>
+#include "Bno055.h"
 
 #define FRAME (20) // gyro heading refresh rate, in millis //was 40
 //#define FRAME (1000) //test
@@ -23,214 +24,70 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 //==================================================
 //===                   GYRO                     ===
 //==================================================
+//Bno055 bno(trb);//xyz
+//
+//const double rad_to_deg = 57.295779513082320876798154814105;
+//
+//int underoverflow = 0;
+//double lastreading;
+//double getHeading() {
+//	double degree = bno.heading() * rad_to_deg;
+//	if(lastreading <= 2 && degree > 355){
+//		underoverflow--;
+//	}else if(lastreading > 355 && degree < 5){
+//		underoverflow++;
+//	}
+//	lastreading = degree;
+//	degree += 360 * underoverflow;
+//	return degree;
+//}
 
 L3G gyro;
-LSM303 accel;
 
-bool usegyro = false;
+//stores the current accumulated heading read by the current frame
+//double heading;
+double zero;
+//volatile double global_heading;
+volatile double heading;
 
+// turn off gyro reading when not needed to reduce interference with other sensor that interrupts
+bool usegyro;
 
-float G_Dt=0.020;    // Integration time (DCM algorithm)  We will run the integration loop at 50Hz if possible
-
-long timer=0;   //general purpose timer
-long timer1=0;
-long timer2=0;
-
-float G_gain=.00875; // gyros gain factor for 250deg/sec
-float gyro_x; //gyro x val
-float gyro_y; //gyro x val
-float gyro_z; //gyro x val
-float gyro_xold; //gyro cummulative x value
-float gyro_yold; //gyro cummulative y value
-float gyro_zold; //gyro cummulative z value
-float gerrx; // Gyro x error
-float gerry; // Gyro y error
-float gerrz; // Gyro 7 error
-
-float A_gain=.00875; // gyros gain factor for 250deg/sec
-float accel_x; //gyro x val
-float accel_y; //gyro x val
-float accel_z; //gyro x val
-float accel_xold; //gyro cummulative x value
-float accel_yold; //gyro cummulative y value
-float accel_zold; //gyro cummulative z value
-float aerrx; // Accel x error
-float aerry; // Accel y error
-float aerrz; // Accel 7 error
-
-void gyroreset(){
-//	gyro_x = 0;
-//	gyro_y = 0;
-//	gyro_z = 0;
-//	accel_x = 0;
-//	accel_y = 0;
-//	accel_z = 0;
+/**
+ * reset the accumulated heading to zero and get ready for the next read
+ */
+void zeroHeading() {
+	heading = 0;
+//	noInterrupts();
 	usegyro = true;
+	Serial.println("Resetting");
 	delay(200);
 }
 
-void gyrooff(){
+/**
+ * should only be called once in the loop() function for every frame
+ */
+double getHeading() {
+	gyro.read();
+
+	//integrates the gyro reading using the time interval since last read
+	//assuming the robot is turning at a constant angular velocity since the last reading
+	//unit in millis degrees (mdegree/s * ms * 1s/1000ms)
+	//positive = CCW
+	if (((int) gyro.g.x > 0 ? (int) gyro.g.x : -gyro.g.x) > 500) {
+//		global_heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
+		heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
+	}
+//	return global_heading;
+	return heading;
+}
+
+void stopGyro() {
 	usegyro = false;
 	delay(200);
+	heading = 0;
+//	interrupts();
 }
-
-
-void gyroZero(){
-// takes 200 samples of the gyro
-  for(int i =0;i<200;i++){
-  gyro.read();
-  gerrx+=gyro.g.x;
-  gerry+=gyro.g.y;
-  gerrz+=gyro.g.z;
-  delay(20);
-  }
-  gerrx = gerrx/200; // average reading to obtain an error/offset
-  gerry = gerry/200;
-  gerrz = gerrz/200;
-
-  Serial.println(gerrx); // print error vals
-  Serial.println(gerry);
-  Serial.println(gerrz);
-}
-
-void readGyro(){
-  gyro.read(); // read gyro
-//  timer=millis(); //reset timer
-  gyro_x=(float)(gyro.g.x-gerrx)*G_gain; // offset by error then multiply by gyro gain factor
-  gyro_y=(float)(gyro.g.y-gerry)*G_gain;
-  gyro_z=(float)(gyro.g.z-gerrz)*G_gain;
-
-  gyro_x = gyro_x*G_Dt; // Multiply the angular rate by the time interval
-  gyro_y = gyro_y*G_Dt;
-  gyro_z = gyro_z*G_Dt;
-
-  gyro_x +=gyro_xold; // add the displacment(rotation) to the cumulative displacment
-  gyro_y += gyro_yold;
-  gyro_z += gyro_zold;
-
-  gyro_xold=gyro_x ; // Set the old gyro angle to the current gyro angle
-  gyro_yold=gyro_y ;
-  gyro_zold=gyro_z ;
-}
-
-void printGyro(){
-  timer2=millis();
-
- // The gyro_axis variable keeps track of roll, pitch,yaw based on the complimentary filter
-  Serial.print(" GX: ");
-  Serial.print(gyro_x);
-  Serial.print(" GY: ");
-  Serial.print(gyro_y);
-  Serial.print(" GZ: ");
-  Serial.print(gyro_z);
-
-  Serial.print("  Ax =  ");
-  Serial.print(accel_x);
-  Serial.print("  Ay =  ");
-  Serial.print(accel_y);
-  Serial.print("  Az =  ");
-  Serial.println(accel_z);
-}
-
-void Accel_Init()
-{
-  accel.init();
-  accel.enableDefault();
-  Serial.print("Accel Device ID");
-  Serial.println(accel.getDeviceType());
-  switch (accel.getDeviceType())
-  {
-    case LSM303::device_D:
-      accel.writeReg(LSM303::CTRL2, 0x18); // 8 g full scale: AFS = 011
-      break;
-    case LSM303::device_DLHC:
-      accel.writeReg(LSM303::CTRL_REG4_A, 0x28); // 8 g full scale: FS = 10; high resolution output mode
-      break;
-    default: // DLM, DLH
-      accel.writeReg(LSM303::CTRL_REG4_A, 0x30); // 8 g full scale: FS = 11
-  }
-}
-
-
-// Reads x,y and z accelerometer registers
-void readAccel()
-{
-  accel.readAcc();
-
-  accel_x = accel.a.x >> 4; // shift left 4 bits to use 12-bit representation (1 g = 256)
-  accel_y = accel.a.y >> 4;
-  accel_z = accel.a.z >> 4;
-
-  // accelerations in G
-  accel_x = (accel_x/256);
-  accel_y = (accel_y/256);
-  accel_z = (accel_z/256);
-  }
-
-void complimentaryFilter(){
-  readGyro();
-  readAccel();
-float x_Acc,y_Acc;
-float magnitudeofAccel= (abs(accel_x)+abs(accel_y)+abs(accel_z));
-if (magnitudeofAccel > 6 && magnitudeofAccel < 1.2)
-{
-  x_Acc = atan2(accel_y,accel_z)*180/ PI;
-  gyro_x = gyro_x * 0.98 + x_Acc * 0.02;
-
-  y_Acc = atan2(accel_x,accel_z)* 180/PI;
-  gyro_y = gyro_y * 0.98 + y_Acc * 0.02;
-}
-
-}
-
-//L3G gyro;
-//
-////stores the current accumulated heading read by the current frame
-////double heading;
-//double zero;
-////volatile double global_heading;
-//volatile double heading;
-//
-//// turn off gyro reading when not needed to reduce interference with other sensor that interrupts
-//bool usegyro;
-//
-///**
-// * reset the accumulated heading to zero and get ready for the next read
-// */
-//void zeroHeading() {
-//	heading = 0;
-////	noInterrupts();
-//	usegyro = true;
-//	Serial.println("Resetting");
-//	delay(200);
-//}
-//
-///**
-// * should only be called once in the loop() function for every frame
-// */
-//double getHeading() {
-//	gyro.read();
-//
-//	//integrates the gyro reading using the time interval since last read
-//	//assuming the robot is turning at a constant angular velocity since the last reading
-//	//unit in millis degrees (mdegree/s * ms * 1s/1000ms)
-//	//positive = CCW
-//	Serial.print("gyro:");
-//	Serial.println(gyro.g.x);
-//	if (((int) gyro.g.x > 0 ? (int) gyro.g.x : -gyro.g.x) > 500) {
-////		global_heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
-//		heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
-//	}
-////	return global_heading;
-//	return heading;
-//}
-//
-//void stopGyro() {
-//	usegyro = false;
-//	delay(200);
-//	heading = 0;
-////	interrupts();
-//}
 
 //==================================================
 //===           SERVO + FLAME DETECTION          ===
@@ -243,12 +100,11 @@ int flamedata[13];
 const int flame_pin = A0;
 const double delta_fan_flame_dist = 1.875; //inch
 const double fan_height = 8.25; //in ground to fan axle
-const double us_fix_dist = 3.0;//can be 2 in
+const double us_fix_dist = 3.0; //can be 2 in
 const double us_stepcenter_dist = 2.875; //inch
 //TO BE CALCULATED - kinda like registers
 int delta_fan_flame_angle;
 double flame_height;
-
 
 int maxangle = 0;
 int checkflame() {
@@ -356,13 +212,13 @@ void blowOutFlame() {
 		Serial.println(max);
 		getFlameHeight(maxanglev);
 		servo.write(maxanglev + delta_fan_flame_angle);
-//		robot.fan(true);
-//		delay(5000);
-//		robot.fan(false);
-//		servo.write(maxangle);
-//		if (analogRead(flame_pin) < 500){
-//			repeat = true;
-//		}
+		robot.fan(true);
+		delay(5000);
+		robot.fan(false);
+		servo.write(maxangle);
+		if (analogRead(flame_pin) < 500){
+			repeat = true;
+		}
 	} while (repeat);
 	lcd.setCursor(0, 1);
 	lcd.print("Flame Out, z: ");
@@ -402,8 +258,8 @@ typedef enum {
 
 void initialization() {
 	if (robot.buttonPressed()) {
-//		state = DECISION;
-		state = CHECK_FLAME;
+		state = DECISION;
+//		state = CHECK_FLAME;
 	}
 }
 
@@ -415,24 +271,24 @@ void decision() {
 		state = TURN_RIGHT90;
 		robot.resetEnc();
 //		zeroHeading();
-		gyroreset();
+//		gyroreset();
 	}
 }
 
 void rightAlign() {
 //	robot.updateCoor(global_heading);
-	robot.updateCoor(gyro_x);
+	robot.updateCoor();
 	switch (robot.rightAlign(150)) {
 	case TURNLEFT:
 		robot.resetEnc();
 //		zeroHeading();
-		gyroreset();
+//		gyroreset();
 		state = TURN_LEFT90;
 		break;
 	case TURNRIGHT:
 		robot.resetEnc();
 //		zeroHeading();
-		gyroreset();
+//		gyroreset();
 		state = TURN_RIGHT90;
 		break;
 	case ONCLIFF:
@@ -444,45 +300,54 @@ void rightAlign() {
 	}
 }
 
-void backward2in() {
-	if (robot.driveDist(-150, 2)) {
+void backward2in() {//actually backward something else
+	if (robot.driveDist(150, false, 5)) {
 		robot.resetEnc();
 		state = TURN_LEFT90;
 //		zeroHeading();
-		gyroreset();
+//		gyroreset();
 	}
 }
 
 void turnRight90() {
-	if (robot.turn(90, false, 120, gyro_x)) {
+	if (robot.odometryTurn(90, false, 90)) {
 		state = FORWARD2IN;
 		robot.resetEnc();
-//		stopGyro();
-		gyrooff();
+		stopGyro();
+//		gyrooff();
 	}
 }
 
-void forward2in() {
-	if (robot.driveDist(150, 2)) {
+void forward2in() {//actually forward another distance
+	if (robot.driveDist(120, true, 10)) {
 		if (robot.isFrontLine()) {
 			cliff = true;
-			state = TURN_LEFT90;
-			gyroreset();
+			state = BACKWARD2IN;
+			Serial.println("CLIFF");
+//			zeroHeading();
+//			gyroreset();
 		} else {
-			state = CHECK_FLAME;
+			if (robot.isFrontUS()){
+				state = TURN_LEFT90;
+				Serial.println("FOUND WALL");
+//				zeroHeading();
+			}else{
+				state = CHECK_FLAME;
+			}
 		}
 		robot.resetEnc();
 	}
 }
 
 void turnLeft90() {
-	if (robot.turn(90, true, 120, gyro_x)) {
+	if (robot.odometryTurn(90, true, 90)) {
 		if (cliff) {
 			state = CLIFF_FORWARD;
 		} else {
 			state = CHECK_FLAME;
 		}
-		gyrooff();
+//		gyrooff();
+//		stopGyro();
 		robot.resetEnc();
 	}
 }
@@ -490,34 +355,28 @@ void turnLeft90() {
 State wayToFlame;
 void checkFlame() {
 	checkflame();
-	if (maxangle != -1024){
+	if (maxangle != -1024) {
 		state = FOUND_FLAME;
 		wayToFlame = TURN_TO_FLAME;
 		foundflame = true;
-		gyroreset();
+		zeroHeading();
+		//		gyroreset();
 		robot.resetEnc();
-	}else{
+	} else {
 		state = DECISION;
 	}
-//	switch (checkflame()) {
-//	case FORWARD:
-//	case LEFT:
-//		state = FOUND_FLAME;
-//		foundflame = true;
-////		wayToFlame =
-//		break;
-//	default:
-//		state = DECISION;
-//	}
 }
 
 void cliffForward() {
 //	robot.updateCoor(global_heading);
-	robot.updateCoor(gyro_x);
+	robot.updateCoor();
+	Serial.println("CLIFF FORWARD");
 	if (robot.driveForward(150)) {
+		delay(100);
 		if (robot.isFrontUS()) {
 			state = TURN_LEFT90;
-			gyroreset();
+//			zeroHeading();
+//			gyroreset();
 		} else {
 			state = DECISION;
 		}
@@ -526,52 +385,53 @@ void cliffForward() {
 	}
 }
 
-
-
 int lastFlameReading = 1023;
 int r;
 void foundFlame() {
-	switch(wayToFlame){
+	switch (wayToFlame) {
 	case TURN_TO_FLAME:
-		if (robot.turn(maxangle, false, 90, gyro_x)){
+		if (robot.odometryTurn(maxangle, false, 90)) {
 			wayToFlame = DRIVE_TILL_US;
 			robot.setStepperAngle(0);
 			robot.resetEnc();
-			gyrooff();
+			stopGyro();
+//			gyrooff();
 		}
 		break;
 	case DRIVE_TILL_FLAME:
-		robot.updateCoor(gyro_x);
+		robot.updateCoor();
 
 		robot.setStepperAngle(-90);
 		servo.write(90);
 		r = analogRead(flame_pin);
 		Serial.print("flame: ");
 		Serial.println(r);
-		if ( lastFlameReading < r && r < 200){
+		if (lastFlameReading < r && r < 200) {
 			wayToFlame = TURN_LEFT90;
-			gyroreset();
+//			zeroHeading();
+//			gyroreset();
 			robot.drive(90, 90);
 			delay(900);
 			robot.stop();
-		}else{
+		} else {
 			robot.drive(100, 100);
 			lastFlameReading = r;
 		}
 		break;
 	case TURN_LEFT90:
-		if (robot.turn(90, true, 120, gyro_x)) {
-			gyrooff();
+		if (robot.odometryTurn(90, true, 90)) {
+//			gyrooff();
+			stopGyro();
 			robot.resetEnc();
 			wayToFlame = DRIVE_TILL_US;
 			robot.setStepperAngle(0);
 		}
 		break;
 	case DRIVE_TILL_US:
-		robot.updateCoor(gyro_x);
+		robot.updateCoor();
 //		int reading = robot.readUsFront();
 		robot.drive(100, 100);
-		if (robot.isFrontUS()){
+		if (robot.isFrontUS()) {
 			robot.stop();
 			blowOutFlame();
 			wayToFlame = FINISH;
@@ -590,28 +450,28 @@ void foundFlame() {
 		lcd.print("z:");
 		lcd.print(flame_height);
 		wayToFlame = TURNING_AWAY;
-		gyroreset();
+//		zeroHeading();
+//		gyroreset();
 //		robot.resetEnc();
 		break;
 	case TURNING_AWAY:
-		if (robot.turn(180, true, 150, gyro_x)){
+		if (robot.odometryTurn(180, true, 90)) {
 			wayToFlame = HEADING_HOME;
+			stopGyro();
 		}
 		break;
 	case HEADING_HOME:
 		robot.drive(100, 100);
-		if (robot.isFrontUS()){
+		if (robot.isFrontUS()) {
 			robot.stop();
 //			blowOutFlame();
-			wayToFlame = INITIALIZATION;//stop the state machine
+			wayToFlame = INITIALIZATION; //stop the state machine
 		}
 		break;
 	default:
 		break;
 	}
 }
-
-
 
 //==================================================
 //===   		        MAIN 			         ===
@@ -621,17 +481,18 @@ void setup() {
 
 	lcd.begin(16, 2);
 	//GYRO
-	Wire.begin();
-	//keeps polling the gyro status
-	//side effect: blocks the program till the power is turned on
-	while (!gyro.init()) {
-		Serial.println("Failed to autodetect gyro type!");
-		delay(200);
-	}
-	gyro.enableDefault();
-	delay(1000);
-	gyroZero();
-	Accel_Init();
+//	Wire.begin();
+//	//keeps polling the gyro status
+//	//side effect: blocks the program till the power is turned on
+//	while (!gyro.init()) {
+//		Serial.println("Failed to autodetect gyro type!");
+//		delay(200);
+//	}
+//	gyro.enableDefault();
+//	delay(1000);
+
+//	gyroZero();
+//	Accel_Init();
 
 	//GYRO calibration
 //	double calibration = 0;
@@ -642,15 +503,22 @@ void setup() {
 //	}
 //	zero = calibration / 100.0;
 
+//	Serial.println("bno start");
+//	bno.setup();
+//	lastreading = bno.heading() * rad_to_deg;
+//	robot.ideal_heading = lastreading;
+//	Serial.println("bno end");
+
 	servo.attach(servopin);
 	servo.write(90);
 
-	usegyro = false;
+//	usegyro = false;
 //	global_heading = 0;
 //	heading = 0;
 
 	state = INITIALIZATION;
 //	state = FOUND_FLAME;
+	robot.resetEnc();
 	wayToFlame = DRIVE_TILL_FLAME;
 }
 
@@ -660,6 +528,7 @@ int curtime = 0;
 
 int temp = 0;
 
+int dummystate = 0;
 void loop() {
 //CANNOT READ ENCODER AND USE GYRO AT THE SAME TIME
 //NEED TO HOLD THE STEPPER MOTOR IN PLACE BEFORE TURNING ON THE ROBOT
@@ -667,91 +536,82 @@ void loop() {
 	//===   		   DEMONSTRATION 		         ===
 	//==================================================
 
-//	//simply find flame
-//	checkFlame();
-//	delay(5000000);
-
-//	//find flame height
-//	blowOutFlame();
-//	delay(5000000);
-
-
-//	switch (temp) {
-//	case 0:
-//		if (robot.turn(90, true, 175, global_heading)) {
-//			temp = 1;
-//			delay(5000);
-//			zeroHeading();
-//		}
-//		break;
-//	case 1:
-//		if (robot.turn(75, false, 175, global_heading)){
-//			temp = 2;
-//			delay(5000);
-////			usegyro = false;
-//		}
-//		break;
-//	case 2:
-//		if (robot.turn(105, false, 175, global_heading)){
-//			temp = 3;
-////			usegyro = false;
-//		}
-//		break;
-//	}
-////	Serial.println(temp);
-
-//	robot.fan(true);
-//	delay(5000);
-//	robot.fan(false);
-//	robot.setStepperAngle(75);
-//	robot.setStepperAngle(105);
-//	Serial.println("fan Off");
-
 	//=========== STATE MACHINE================
 	lcd.setCursor(0, 0);
-	lcd.clear();
 	switch (state) {
 	case INITIALIZATION:
 		initialization();
 		lcd.print("INIT");
+		Serial.println("INIT");
 		break;
 	case DECISION:
 		lcd.print("DECIDE");
+		Serial.println("DECIDE");
 		decision();
 		break;
 	case RIGHT_ALIGN:
 		lcd.print("RIGHT ALIGN");
+		Serial.println("RIGHT ALIGN");
 		rightAlign();
 		break;
 	case TURN_LEFT90:
 		lcd.print("LEFT 90");
+		Serial.println("LEFT 90");
 		turnLeft90();
 		break;
 	case TURN_RIGHT90:
 		lcd.print("RIGHT 90");
+		Serial.println("RIGHT 90");
 		turnRight90();
 		break;
 	case FORWARD2IN:
 		lcd.print("FORWARD 2IN");
+		Serial.println("FORWARD 2IN");
 		forward2in();
 		break;
 	case BACKWARD2IN:
 		lcd.print("BACKWARD 2IN");
+		Serial.println("BACKWARD 2IN");
 		backward2in();
 		break;
 	case CLIFF_FORWARD:
 		lcd.print("CLIFF");
+		Serial.println("CLIFF");
 		cliffForward();
 		break;
 	case FOUND_FLAME:
 		lcd.print("FOUND FLAME");
+		Serial.println("FOUND FLAME");
 		foundFlame();
 		break;
 	case CHECK_FLAME:
 		lcd.print("CHECK FLAME");
+		Serial.println("CHECK FLAME");
 		checkFlame();
 		break;
 	}
+
+//	switch (dummystate) {
+//	case 0:
+//		if (robot.odometryTurn(90, false, 90)) {
+//			dummystate++;
+//			robot.resetEnc();
+//		}
+//		break;
+//	case 1:
+//		if (robot.odometryTurn(90, true, 90)) {
+//			dummystate++;
+//			robot.resetEnc();
+//		}
+//		break;
+//
+//	case 2:
+//		if (robot.odometryTurn(180, false, 90)){
+//			robot.resetEnc();
+//			delay(10000000);
+//		}
+//	}
+
 
 //do what needs to be done in a frame
 	//set frame rate for gyro and everything else
@@ -759,15 +619,21 @@ void loop() {
 	}
 
 	ltime = millis();
-	if (usegyro) {
-		complimentaryFilter();
-		Serial.print("Heading, ");
-		Serial.println(gyro_x);
-	} else {
-		Serial.print("x, y, ");
-		Serial.print(robot.getX());
-		Serial.print(" ");
-		Serial.println(robot.getY());
-		//update coordinates
-	}
+	lcd.setCursor(0, 1);
+	lcd.print("x:");
+	lcd.print(robot.getX());
+	lcd.print("y:");
+	lcd.print(robot.getY());
+//	if (usegyro) {
+////		complimentaryFilter();
+//		Serial.print("Heading, ");
+//		Serial.println(bno.heading());
+//		Serial.println(getHeading());
+//	} else {
+//	Serial.print("x, y, ");
+//	Serial.print(robot.getX());
+//	Serial.print(" ");
+//	Serial.println(robot.getY());
+	//update coordinates
+//	}
 }

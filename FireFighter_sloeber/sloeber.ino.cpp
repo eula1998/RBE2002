@@ -2,7 +2,7 @@
 //This is a automatic generated file
 //Please do not modify this file
 //If you touch this file your change will be overwritten during the next build
-//This file has been generated on 2018-04-25 15:16:52
+//This file has been generated on 2018-04-28 20:00:56
 
 #include "Arduino.h"
 #include <QTRSensors.h>
@@ -14,15 +14,11 @@
 #include <LiquidCrystal.h>
 #include <Math.h>
 #include <LSM303.h>
+#include "Bno055.h"
 
-void gyroreset();
-void gyrooff();
-void gyroZero();
-void readGyro();
-void printGyro();
-void Accel_Init() ;
-void readAccel() ;
-void complimentaryFilter();
+void zeroHeading() ;
+double getHeading() ;
+void stopGyro() ;
 int checkflame() ;
 void getFlameHeight(int maxangle) ;
 void blowOutFlame() ;
