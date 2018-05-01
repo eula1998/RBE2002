@@ -10,7 +10,7 @@
 #include <LSM303.h>
 #include "Bno055.h"
 
-#define FRAME (20) // gyro heading refresh rate, in millis //was 40
+#define FRAME (40) // gyro heading refresh rate, in millis //was 40
 //#define FRAME (1000) //test
 
 Robot robot;
@@ -116,9 +116,9 @@ int checkflame() {
 	int angle;
 	int reading;
 	int max = 1024;
-	for (int x = 0; x < 13; x++) {
+	for (int x = 0; x < 13; x++) {//spanning left to right
 		flamedata[x] = 1024;
-		angle = 15 * x - 90;
+		angle = 15 * x - 90;//-90 to 90
 		robot.setStepperAngle(angle);
 		for (int y = 120; y >= 45; y -= 15) {
 			servo.write(y);
@@ -221,8 +221,8 @@ void blowOutFlame() {
 		}
 	} while (repeat);
 	lcd.setCursor(0, 1);
-	lcd.print("Flame Out, z: ");
-	lcd.print(flame_height);
+//	lcd.print("Flame Out, z: ");
+//	lcd.print(flame_height);
 }
 
 //==================================================
@@ -301,6 +301,7 @@ void rightAlign() {
 }
 
 void backward2in() {//actually backward something else
+	robot.updateCoor();
 	if (robot.driveDist(150, false, 5)) {
 		robot.resetEnc();
 		state = TURN_LEFT90;
@@ -319,11 +320,12 @@ void turnRight90() {
 }
 
 void forward2in() {//actually forward another distance
+	robot.updateCoor();
 	if (robot.driveDist(120, true, 10)) {
 		if (robot.isFrontLine()) {
 			cliff = true;
 			state = BACKWARD2IN;
-			Serial.println("CLIFF");
+//			Serial.println("CLIFF");
 //			zeroHeading();
 //			gyroreset();
 		} else {
@@ -357,7 +359,7 @@ void checkFlame() {
 	checkflame();
 	if (maxangle != -1024) {
 		state = FOUND_FLAME;
-		wayToFlame = TURN_TO_FLAME;
+		wayToFlame = DRIVE_TILL_FLAME;
 		foundflame = true;
 		zeroHeading();
 		//		gyroreset();
@@ -370,7 +372,6 @@ void checkFlame() {
 void cliffForward() {
 //	robot.updateCoor(global_heading);
 	robot.updateCoor();
-	Serial.println("CLIFF FORWARD");
 	if (robot.driveForward(150)) {
 		delay(100);
 		if (robot.isFrontUS()) {
@@ -390,7 +391,7 @@ int r;
 void foundFlame() {
 	switch (wayToFlame) {
 	case TURN_TO_FLAME:
-		if (robot.odometryTurn(maxangle, false, 90)) {
+		if (robot.odometryTurn(abs(maxangle), (maxangle < 0), 90)) {
 			wayToFlame = DRIVE_TILL_US;
 			robot.setStepperAngle(0);
 			robot.resetEnc();
@@ -413,6 +414,7 @@ void foundFlame() {
 			robot.drive(90, 90);
 			delay(900);
 			robot.stop();
+			robot.resetEnc();
 		} else {
 			robot.drive(100, 100);
 			lastFlameReading = r;
@@ -421,7 +423,7 @@ void foundFlame() {
 	case TURN_LEFT90:
 		if (robot.odometryTurn(90, true, 90)) {
 //			gyrooff();
-			stopGyro();
+//			stopGyro();
 			robot.resetEnc();
 			wayToFlame = DRIVE_TILL_US;
 			robot.setStepperAngle(0);
@@ -457,7 +459,7 @@ void foundFlame() {
 	case TURNING_AWAY:
 		if (robot.odometryTurn(180, true, 90)) {
 			wayToFlame = HEADING_HOME;
-			stopGyro();
+//			stopGyro();
 		}
 		break;
 	case HEADING_HOME:
@@ -532,9 +534,6 @@ int dummystate = 0;
 void loop() {
 //CANNOT READ ENCODER AND USE GYRO AT THE SAME TIME
 //NEED TO HOLD THE STEPPER MOTOR IN PLACE BEFORE TURNING ON THE ROBOT
-	//==================================================
-	//===   		   DEMONSTRATION 		         ===
-	//==================================================
 
 	//=========== STATE MACHINE================
 	lcd.setCursor(0, 0);
@@ -575,8 +574,8 @@ void loop() {
 		backward2in();
 		break;
 	case CLIFF_FORWARD:
-		lcd.print("CLIFF");
-		Serial.println("CLIFF");
+		lcd.print("CLIFF FORWARD");
+		Serial.println("CLIFF FORWARD");
 		cliffForward();
 		break;
 	case FOUND_FLAME:
@@ -591,49 +590,33 @@ void loop() {
 		break;
 	}
 
-//	switch (dummystate) {
-//	case 0:
-//		if (robot.odometryTurn(90, false, 90)) {
-//			dummystate++;
-//			robot.resetEnc();
-//		}
-//		break;
-//	case 1:
-//		if (robot.odometryTurn(90, true, 90)) {
-//			dummystate++;
-//			robot.resetEnc();
-//		}
-//		break;
-//
-//	case 2:
-//		if (robot.odometryTurn(180, false, 90)){
-//			robot.resetEnc();
-//			delay(10000000);
-//		}
-//	}
-
-
 //do what needs to be done in a frame
 	//set frame rate for gyro and everything else
 	while (millis() - ltime < FRAME) {
 	}
 
 	ltime = millis();
-	lcd.setCursor(0, 1);
-	lcd.print("x:");
-	lcd.print(robot.getX());
-	lcd.print("y:");
-	lcd.print(robot.getY());
+
 //	if (usegyro) {
 ////		complimentaryFilter();
 //		Serial.print("Heading, ");
 //		Serial.println(bno.heading());
 //		Serial.println(getHeading());
 //	} else {
-//	Serial.print("x, y, ");
-//	Serial.print(robot.getX());
-//	Serial.print(" ");
-//	Serial.println(robot.getY());
+	if(!foundflame){
+		lcd.setCursor(0, 1);
+		lcd.print("x:");
+		lcd.print(robot.getX());
+		lcd.print("y:");
+		lcd.print(robot.getY());
+
+		Serial.print("x, y, ");
+		Serial.print(robot.getX());
+		Serial.print(" ");
+		Serial.print(robot.getY());
+		Serial.print(" ideal: ");
+		Serial.println(robot.ideal_heading);
+	}
 	//update coordinates
 //	}
 }

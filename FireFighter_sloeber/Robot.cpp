@@ -9,7 +9,8 @@
 
 #include "Robot.h"
 #include "Arduino.h"
-#include "LookUpTable.h"
+#include <Math.h>
+//#include "LookUpTable.h"
 
 static const int rmotorpinF = 5; //forward pin // in1
 static const int rmotorpinB = 4; //backward pin //in2
@@ -41,63 +42,63 @@ static double encFactor = 0.0016198837120072371385823004945; //  2.75in * PI / 3
 
 static const double turningCircumference = 23.561944901923449288469825374596;
 static const double turningFactor = 0.04244131815783875620503567023267;
-
-static double Sin(double deg){
-	int degree = deg;
-	double difference = deg - (double) degree;
-	if (difference > 0.5) {
-		degree++;
-	}
-	while (degree > 360) {
-		degree -= 360;
-	}
-
-	while (degree < 0) {
-		degree += 360;
-	}
-
-	if (degree >= 0 && degree <= 90) {
-		return sin_t[degree];
-	} else if (degree > 90 && degree <= 180) {
-		return sin_t[180 - degree];
-	} else if (degree > 180 && degree <= 270) {
-		return -sin_t[180 - degree];
-	} else {
-		return -sin_t[degree];
-	}
-}
-
-static double Cos(double deg){
-	int degree = deg;
-	double difference = deg - (double) degree;
-	if (difference > 0.5) {
-		degree++;
-	}
-	while (degree > 360) {
-		degree -= 360;
-	}
-
-	while (degree < 0) {
-		degree += 360;
-	}
-
-	if (degree >= 0 && degree <= 90) {
-		return cos_t[degree];
-	} else if (degree > 90 && degree <= 180) {
-		return -cos_t[180 - degree];
-	} else if (degree > 180 && degree <= 270) {
-		return -cos_t[degree - 180];
-	} else {
-		return cos_t[360-degree];
-	}
-}
+//
+//static double Sin(double deg){
+//	int degree = deg;
+//	double difference = deg - (double) degree;
+//	if (difference > 0.5) {
+//		degree++;
+//	}
+//	while (degree > 360) {
+//		degree -= 360;
+//	}
+//
+//	while (degree < 0) {
+//		degree += 360;
+//	}
+//
+//	if (degree >= 0 && degree <= 90) {
+//		return sin_t[degree];
+//	} else if (degree > 90 && degree <= 180) {
+//		return sin_t[180 - degree];
+//	} else if (degree > 180 && degree <= 270) {
+//		return -sin_t[180 - degree];
+//	} else {
+//		return -sin_t[degree];
+//	}
+//}
+//
+//static double Cos(double deg){
+//	int degree = deg;
+//	double difference = deg - (double) degree;
+//	if (difference > 0.5) {
+//		degree++;
+//	}
+//	while (degree > 360) {
+//		degree -= 360;
+//	}
+//
+//	while (degree < 0) {
+//		degree += 360;
+//	}
+//
+//	if (degree >= 0 && degree <= 90) {
+//		return cos_t[degree];
+//	} else if (degree > 90 && degree <= 180) {
+//		return -cos_t[180 - degree];
+//	} else if (degree > 180 && degree <= 270) {
+//		return -cos_t[degree - 180];
+//	} else {
+//		return cos_t[360-degree];
+//	}
+//}
 
 
 Robot::Robot():
+		ideal_heading(0),
 		motorright(rmotorpinF, rmotorpinB), motorleft(lmotorpinF, lmotorpinB),
 		rightEnc(rencoder1, rencoder2), leftEnc(lencoder1, lencoder2),
 		imuPID(17, 0.05, 15),
-		ideal_heading(0),
 		usFront(usf_in, usf_out), usRight(usr_in,usr_out),
 		x(0.0), y(0.0),
 		lastLeftEnc(0), lastRightEnc(0),
@@ -116,15 +117,12 @@ Robot::~Robot() {
  * positive means forward, and negative means backward
  */
 void Robot::drive(int leftspeed, int rightspeed) {
-	this->motorleft.drive(-leftspeed);
+	this->motorleft.drive(-leftspeed * 1.05);
 	this->motorright.drive(rightspeed);
 }
 
 bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 	int target_heading = ideal_heading + (degree * (CCW ? 1 : -1));
-//	if (firstturn){
-//		degree *= 2;
-//	}
 	int speed = imuPID.calc(target_heading, currentHeading, maxspeed);
 
 //	int speed = imuPID.calc(degree * CCW? 1 : -1, currentHeading, maxspeed);
@@ -142,9 +140,6 @@ bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 		drive(0, 0);
 		ideal_heading = target_heading;
 		resetEnc();
-//		if (!firstturn){
-//			firstturn = true;
-//		}
 		return true;
 	}
 
@@ -154,8 +149,8 @@ bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 //CCW = positive
 bool Robot::odometryTurn(int degree, bool CCW, int maxspeed){
 	double odometryHeading = (abs(readLeftEnc()) + (abs(readRightEnc()))) * turningFactor * 180 * (CCW? 1 : -1); //(360 / 2)
-	Serial.print("Odometry Heading: ");
-	Serial.println(odometryHeading);
+//	Serial.print("Odometry Heading: ");
+//	Serial.println(odometryHeading);
 	int speed = imuPID.calc(degree * (CCW? 1 : -1) , odometryHeading, maxspeed);
 	if (abs(speed) > 20) {
 		drive(-speed, speed);
@@ -176,7 +171,7 @@ bool Robot::driveDist(int speed, bool forward, int distance) {
 		}
 	}
 
-	int s = (distance - abs(readLeftEnc())) / distance * speed + 30; //30 is the base speed
+	int s = (distance - abs(readLeftEnc())) / distance * speed + 50; //30 is the base speed
 	s *= forward? 1 : -1;
 	//make sure it drives straight
 //	Serial.print("Dist: ");
@@ -209,45 +204,32 @@ bool Robot::driveForward(int speed){
 }
 
 RightAlign Robot::rightAlign(int maxspeed) {
+	double usright = readUsRight();
 	if (isFrontLine()) {
 		drive(0, 0);
 		return ONCLIFF;
 	} else if(isFrontUS()){
 		drive(0, 0);
 		return TURNLEFT;
-	}else if (readUsRight() > 10) {//field is ~ 80 inch
+	}else if (usright > 10) {//field is ~ 80 inch
 		delay(750);
 		drive(0, 0);
 		Serial.println("NO MORE WALL");
 		return TURNRIGHT;
 	} else {
-//		int s = (usFront.distanceRead() - 15) / 100 * maxspeed + 30;
 		int s = maxspeed;
 		//if deviated away from the wall, tilt right until within range again
-		if (usRight.distanceRead() > 7){//distance is greater than 20 cm
-			drive(s*1.05, s * 0.95);
-		}else if(usRight.distanceRead() < 4){
+		if (usright > 4.2){//distance is greater than 20 cm
+			drive(s*1.15, s * 0.95);
+			Serial.println("Correcting right");
+		}else if(usright < 2.5){
 			drive(s * 0.95, s * 1.05);
+			Serial.println("Correcting left");
 		}else{
 			drive(s, s);
 		}
 		return ALRIGHT;
 	}
-//	else if (usRight.distanceRead() < 5){
-//
-//	}
-
-//	else if (isRight()){//need to change
-////		int s = (usFront.distanceRead() - 15) / 100 * maxspeed + 30;
-//		int s = maxspeed;
-//		//if deviated away from the wall, tilt right until within range again
-//
-//		drive(s, s);
-//		return ALRIGHT;
-//	}else{
-//		drive(0, 0);
-//		return TURNRIGHT;
-//	}
 }
 
 //==================================================
@@ -350,8 +332,8 @@ void Robot::updateCoor(){
 	double currLeftEnc = readLeftEnc();
 	double currRightEnc = readRightEnc();
 	double delta = ((currLeftEnc - lastLeftEnc) + (currRightEnc - lastRightEnc)) / 2;
-	x += delta * Sin(ideal_heading);
-	y += delta * Cos(ideal_heading);
+	x += delta * sin(ideal_heading);
+	y += delta * cos(ideal_heading);
 	lastLeftEnc = readLeftEnc();
 	lastRightEnc = readRightEnc();
 }

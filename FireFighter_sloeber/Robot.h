@@ -67,6 +67,8 @@ public:
 	double getY();
 
 	bool buttonPressed();
+
+	double ideal_heading;
 private:
 	PololuMotor motorright;
 	PololuMotor motorleft;
@@ -76,7 +78,6 @@ private:
 
 
 	PID imuPID;
-	double ideal_heading;
 
 	Ultrasonic usFront;
 	Ultrasonic usRight;
