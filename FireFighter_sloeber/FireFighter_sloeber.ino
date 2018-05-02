@@ -1,3 +1,11 @@
+/**
+ * This is the main Arduino sketch for RBE2002 FireFighter challenge
+ * Check comments for usage as well as where commands should have gone
+ * 	if the gyro and fan works.
+ * See relavent state diagram to understand the state machine
+ */
+
+
 #include <QTRSensors.h>//line tracker
 
 #include "L3G.h"
@@ -7,23 +15,26 @@
 #include <Servo.h>
 #include <LiquidCrystal.h>
 #include <Math.h>
-#include <LSM303.h>
-#include "Bno055.h"
+//#include <LSM303.h>
+//#include "Bno055.h"
 
 #define FRAME (40) // gyro heading refresh rate, in millis //was 40
-//#define FRAME (1000) //test
 
 Robot robot;
 
 //==================================================
 //===                   LCD                      ===
 //==================================================
+//this can not be initialized in the Robot class some how
 const int rs = 40, en = 41, d4 = 42, d5 = 43, d6 = 44, d7 = 45;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 //==================================================
 //===                   GYRO                     ===
 //==================================================
+
+//===========Adafruit BNO===========================
+
 //Bno055 bno(trb);//xyz
 //
 //const double rad_to_deg = 57.295779513082320876798154814105;
@@ -47,8 +58,8 @@ L3G gyro;
 //stores the current accumulated heading read by the current frame
 //double heading;
 double zero;
-//volatile double global_heading;
-volatile double heading;
+volatile double global_heading;
+//volatile double heading;
 
 // turn off gyro reading when not needed to reduce interference with other sensor that interrupts
 bool usegyro;
@@ -57,8 +68,8 @@ bool usegyro;
  * reset the accumulated heading to zero and get ready for the next read
  */
 void zeroHeading() {
-	heading = 0;
-//	noInterrupts();
+//	heading = 0;
+//	noInterrupts(); //this also stops the gyro itself
 	usegyro = true;
 	Serial.println("Resetting");
 	delay(200);
@@ -75,17 +86,17 @@ double getHeading() {
 	//unit in millis degrees (mdegree/s * ms * 1s/1000ms)
 	//positive = CCW
 	if (((int) gyro.g.x > 0 ? (int) gyro.g.x : -gyro.g.x) > 500) {
-//		global_heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
-		heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
+		global_heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
+//		heading += ((double) gyro.g.x - zero) * FRAME * 0.00000875; //8.75 / 1000 / 1000;
 	}
-//	return global_heading;
-	return heading;
+	return global_heading;
+//	return heading;
 }
 
 void stopGyro() {
 	usegyro = false;
 	delay(200);
-	heading = 0;
+//	heading = 0;
 //	interrupts();
 }
 
@@ -100,7 +111,6 @@ int flamedata[13];
 const int flame_pin = A0;
 const double delta_fan_flame_dist = 1.875; //inch
 const double fan_height = 8.25; //in ground to fan axle
-const double us_fix_dist = 3.0; //can be 2 in
 const double us_stepcenter_dist = 2.875; //inch
 //TO BE CALCULATED - kinda like registers
 int delta_fan_flame_angle;
@@ -120,7 +130,7 @@ int checkflame() {
 		flamedata[x] = 1024;
 		angle = 15 * x - 90;//-90 to 90
 		robot.setStepperAngle(angle);
-		for (int y = 120; y >= 45; y -= 15) {
+		for (int y = 120; y >= 45; y -= 15) {// check the flame vertically
 			servo.write(y);
 			delay(120);
 			reading = analogRead(flame_pin);
@@ -128,45 +138,43 @@ int checkflame() {
 				flamedata[x] = reading;
 			}
 		}
-//		flamedata[x] = analogRead(flame_pin);
-		Serial.print("flame, ");
-		Serial.print(flamedata[x]);
-		Serial.print(", angle, ");
-		Serial.print(angle);
+//		Serial.print("flame, ");
+//		Serial.print(flamedata[x]);
+//		Serial.print(", angle, ");
+//		Serial.print(angle);
 
 		if (flamedata[x] < max) {
 			maxangle = angle;
 			max = flamedata[x];
-			Serial.print(", max");
+//			Serial.print(", max");
 		}
-		Serial.println();
+//		Serial.println();
 	}
 	robot.setStepperAngle(0);
-	Serial.print("maxangle, ");
-	Serial.print(maxangle);
-	Serial.print(", max, ");
-	Serial.println(max);
-//	if (maxangle <= 0) {
+//	Serial.print("maxangle, ");
+//	Serial.print(maxangle);
+//	Serial.print(", max, ");
+//	Serial.println(max);
 	if (max < 700) {
 		lcd.setCursor(0, 0);
 		lcd.print("FOUND FLAME");
 		lcd.setCursor(0, 1);
 		lcd.print("DIRECTION:");
 		lcd.print(maxangle);
-//			return true;//maybe also return the 45 deg thingy
-//		if (maxangle < -45) {
-//			return LEFT;
-//		}
-//		return FORWARD;
 		return maxangle;
 	}
-//	}
 	lcd.setCursor(0, 0);
 	lcd.print("FLAME NOT FOUND");
 	maxangle = -1024;
 	return maxangle;
 }
 
+/**
+ * given the verticle angle the servo needs to tilt for
+ * maximum sensor reading, calculates the height of the flam
+ * This is an approximate. The closer to the level of the flame
+ * sensor, the more accurate the approximation is
+ */
 void getFlameHeight(int maxangle) { //
 //trig math taking into account the offset of the flame sensor away from the fan
 
@@ -182,6 +190,10 @@ void getFlameHeight(int maxangle) { //
 	Serial.println(flame_height);
 }
 
+/**
+ * finds the verticle angle that the flam is at,
+ * adjust the fan, and blow the candle out
+ */
 void blowOutFlame() {
 	int max = 1024;
 	int maxanglev = 0;
@@ -190,32 +202,34 @@ void blowOutFlame() {
 	bool repeat;
 	do {
 		repeat = false;
+		//-45 to +45 degree scan bottom to up
 		for (int x = 0; x < 16; x++) {
 			angle = 45 + 5 * x;
 			servo.write(angle);
 			flamedata[x] = analogRead(flame_pin);
-			Serial.print("flame, ");
-			Serial.print(flamedata[x]);
-			Serial.print(", angle, ");
-			Serial.print(angle);
+//			Serial.print("flame, ");
+//			Serial.print(flamedata[x]);
+//			Serial.print(", angle, ");
+//			Serial.print(angle);
 			if (max > flamedata[x]) {
 				max = flamedata[x];
 				maxanglev = angle;
-				Serial.print(", max");
+//				Serial.print(", max");
 			}
-			Serial.println();
+//			Serial.println();
 			delay(100);
 		}
-		Serial.print("maxanglev, ");
-		Serial.print(maxanglev);
-		Serial.print(", max, ");
-		Serial.println(max);
+//		Serial.print("maxanglev, ");
+//		Serial.print(maxanglev);
+//		Serial.print(", max, ");
+//		Serial.println(max);
 		getFlameHeight(maxanglev);
 		servo.write(maxanglev + delta_fan_flame_angle);
 		robot.fan(true);
 		delay(5000);
 		robot.fan(false);
 		servo.write(maxangle);
+		//determines if the flame has been put out yet
 		if (analogRead(flame_pin) < 500){
 			repeat = true;
 		}
@@ -259,7 +273,6 @@ typedef enum {
 void initialization() {
 	if (robot.buttonPressed()) {
 		state = DECISION;
-//		state = CHECK_FLAME;
 	}
 }
 
@@ -295,8 +308,6 @@ void rightAlign() {
 		cliff = true;
 		state = BACKWARD2IN;
 		break;
-	default: //timer?
-		break;
 	}
 }
 
@@ -319,19 +330,19 @@ void turnRight90() {
 	}
 }
 
-void forward2in() {//actually forward another distance
+void forward2in() {//doesn't move forward exactly 2 in; more than 2 in
 	robot.updateCoor();
+	//actually moving forward 10 inches
 	if (robot.driveDist(120, true, 10)) {
 		if (robot.isFrontLine()) {
 			cliff = true;
 			state = BACKWARD2IN;
-//			Serial.println("CLIFF");
 //			zeroHeading();
 //			gyroreset();
 		} else {
 			if (robot.isFrontUS()){
 				state = TURN_LEFT90;
-				Serial.println("FOUND WALL");
+//				Serial.println("FOUND WALL");
 //				zeroHeading();
 			}else{
 				state = CHECK_FLAME;
@@ -354,7 +365,10 @@ void turnLeft90() {
 	}
 }
 
+//recording the state of a inner state machine after the flame is found
+//no need to wall follow anymore
 State wayToFlame;
+
 void checkFlame() {
 	checkflame();
 	if (maxangle != -1024) {
@@ -369,12 +383,15 @@ void checkFlame() {
 	}
 }
 
+/**
+ * robot drive straight until the right wall is found again
+ */
 void cliffForward() {
 //	robot.updateCoor(global_heading);
 	robot.updateCoor();
 	if (robot.driveForward(150)) {
 		delay(100);
-		if (robot.isFrontUS()) {
+		if (robot.isFrontUS() || robot.isFrontLine()) {
 			state = TURN_LEFT90;
 //			zeroHeading();
 //			gyroreset();
@@ -389,9 +406,10 @@ void cliffForward() {
 int lastFlameReading = 1023;
 int r;
 double usreading;
+//the secondary state machine
 void foundFlame() {
 	switch (wayToFlame) {
-	case TURN_TO_FLAME:
+	case TURN_TO_FLAME://turns towards the candle and drives to it; doesn't work well
 		if (robot.odometryTurn(abs(maxangle), (maxangle < 0), 90)) {
 			wayToFlame = DRIVE_TILL_US;
 			robot.setStepperAngle(0);
@@ -402,18 +420,17 @@ void foundFlame() {
 		break;
 	case DRIVE_TILL_FLAME:
 		robot.updateCoor();
-
 		robot.setStepperAngle(-90);
 		servo.write(90);
 		r = analogRead(flame_pin);
-		Serial.print("flame: ");
-		Serial.println(r);
+//		Serial.print("flame: ");
+//		Serial.println(r);
 		if (lastFlameReading < r && r < 200) {
 			wayToFlame = TURN_LEFT90;
 //			zeroHeading();
 //			gyroreset();
 			robot.drive(90, 90);
-			delay(1500);
+			delay(1500);//account for some offset between the us and the turning center
 			robot.stop();
 			robot.resetEnc();
 		} else {
@@ -442,8 +459,6 @@ void foundFlame() {
 		break;
 	case FINISH:
 		lcd.clear();
-//		lcd.setCursor(0, 0);
-//		lcd.print("Flame loc: ");
 		lcd.setCursor(0, 0);
 		lcd.print("x:");
 		usreading = robot.readUsFront();
@@ -468,7 +483,6 @@ void foundFlame() {
 		robot.drive(100, 100);
 		if (robot.isFrontUS()) {
 			robot.stop();
-//			blowOutFlame();
 			wayToFlame = INITIALIZATION; //stop the state machine
 		}
 		break;
@@ -507,6 +521,7 @@ void setup() {
 //	}
 //	zero = calibration / 100.0;
 
+	//BNO calibration
 //	Serial.println("bno start");
 //	bno.setup();
 //	lastreading = bno.heading() * rad_to_deg;
@@ -518,10 +533,8 @@ void setup() {
 
 //	usegyro = false;
 //	global_heading = 0;
-//	heading = 0;
 
 	state = INITIALIZATION;
-//	state = FOUND_FLAME;
 	robot.resetEnc();
 	wayToFlame = DRIVE_TILL_FLAME;
 }
@@ -530,9 +543,6 @@ void setup() {
 int ltime = 0;	//last time
 int curtime = 0;
 
-int temp = 0;
-
-int dummystate = 0;
 void loop() {
 //CANNOT READ ENCODER AND USE GYRO AT THE SAME TIME
 //NEED TO HOLD THE STEPPER MOTOR IN PLACE BEFORE TURNING ON THE ROBOT
@@ -590,6 +600,8 @@ void loop() {
 		Serial.println("CHECK FLAME");
 		checkFlame();
 		break;
+	default:
+		Serial.println("It shouldn't get here");
 	}
 
 //do what needs to be done in a frame

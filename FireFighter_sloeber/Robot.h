@@ -3,7 +3,7 @@
  *  An interface intended for controlling the Pololu motors with a
  *    pololu motor controller with forward and reverse current pin
  *
- *  Created on: Feb 24, 2018
+ *  Created on: Mar 24, 2018
  *      Author: Lingrui
  */
 
@@ -20,6 +20,7 @@ typedef enum {
 	TURNLEFT, TURNRIGHT, ALRIGHT, ONCLIFF
 } RightAlign;
 
+//for signaling between the state machine and right-align() function
 typedef enum {
 	LEFT, FORWARD, CONTINUE
 } FlameStatus;

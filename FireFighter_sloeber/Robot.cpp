@@ -1,7 +1,7 @@
 /*
  * Robot.cpp
  *  The implementation on controlling different parts of the robot;
- *  contain reference to all electronic parts except for the gripper, the rack, and the gyro
+ *  contain reference to almost all electronic parts
  *
  *  Created on: Feb 24, 2018
  *      Author: Lingrui
@@ -40,8 +40,10 @@ static const int button_pin = 22;;
 static double encFactor = 0.0016198837120072371385823004945; //  2.75in * PI / 3200 tick/rev * 3 / 5
 
 
-static const double turningCircumference = 23.561944901923449288469825374596;
-static const double turningFactor = 0.04244131815783875620503567023267;
+static const double turningCircumference = 23.561944901923449288469825374596;//7.5 in diameter
+static const double turningFactor = 0.04244131815783875620503567023267;// = 1/turningCircumference
+
+//These functions were implemented before the discovery of <Math.h>
 //
 //static double Sin(double deg){
 //	int degree = deg;
@@ -98,7 +100,7 @@ Robot::Robot():
 		ideal_heading(0),
 		motorright(rmotorpinF, rmotorpinB), motorleft(lmotorpinF, lmotorpinB),
 		rightEnc(rencoder1, rencoder2), leftEnc(lencoder1, lencoder2),
-		imuPID(17, 0.05, 15),
+		imuPID(17, 0.05, 15),//PID tuning
 		usFront(usf_in, usf_out), usRight(usr_in,usr_out),
 		x(0.0), y(0.0),
 		lastLeftEnc(0), lastRightEnc(0),
@@ -117,11 +119,16 @@ Robot::~Robot() {
  * positive means forward, and negative means backward
  */
 void Robot::drive(int leftspeed, int rightspeed) {
-	this->motorleft.drive(-leftspeed * 1.05);
+	this->motorleft.drive(-leftspeed * 1.05);//the factor accounts for the imbalance between the two motors
 	this->motorright.drive(rightspeed);
 }
 
+/**
+ * given the current robot heading and the desired heading, computes using PID control
+ * the controlled motor output
+ */
 bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
+	//ideally it can accounts for and correct previous turning errors
 	int target_heading = ideal_heading + (degree * (CCW ? 1 : -1));
 	int speed = imuPID.calc(target_heading, currentHeading, maxspeed);
 
@@ -146,7 +153,11 @@ bool Robot::turn(int degree, bool CCW, int maxspeed, double currentHeading) {
 	return false;
 }
 
-//CCW = positive
+/**
+ * takes the same set of parameters as turn(), except for the current heading
+ * the heading is calculated using the encoders, which is only
+ * accessible in the Robot class, unlike gyro
+ */
 bool Robot::odometryTurn(int degree, bool CCW, int maxspeed){
 	double odometryHeading = (abs(readLeftEnc()) + (abs(readRightEnc()))) * turningFactor * 180 * (CCW? 1 : -1); //(360 / 2)
 //	Serial.print("Odometry Heading: ");
@@ -164,6 +175,9 @@ bool Robot::odometryTurn(int degree, bool CCW, int maxspeed){
 	return false;
 }
 
+/**
+ * drives forward/backward for a fixed distance; simple obstable avoidance
+ */
 bool Robot::driveDist(int speed, bool forward, int distance) {
 	if (forward){
 		if (isFrontLine() || isFrontUS()){
@@ -186,6 +200,9 @@ bool Robot::driveDist(int speed, bool forward, int distance) {
 	return true;
 }
 
+/**
+ * drive forward with simple obstacle avoidance
+ */
 bool Robot::driveForward(int speed){
 	if (isFrontLine()){
 		drive(0, 0);
@@ -204,6 +221,9 @@ bool Robot::driveForward(int speed){
 	return false;
 }
 
+/**
+ * main right wall follow program
+ */
 RightAlign Robot::rightAlign(int maxspeed) {
 	double usright = readUsRight();
 	if (isFrontLine()) {
@@ -294,8 +314,8 @@ double Robot::readUsRight(){
 void Robot::fan(bool on){
 	int control = on? HIGH : LOW;
 	digitalWrite(fan_pin, control);
-	Serial.print("fan");
-	Serial.println(control);
+//	Serial.print("fan");
+//	Serial.println(control);
 }
 
 void Robot::stop(){

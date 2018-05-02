@@ -1,5 +1,7 @@
 /*
  * StepperMotor.cpp
+ * A wrapper class for controlling the Orientalmotor PX245
+ *  stepper motor by generating frequency PWM
  *
  *  Created on: Apr 18, 2018
  *      Author: Lingrui

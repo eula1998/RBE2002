@@ -2,7 +2,7 @@
 //This is a automatic generated file
 //Please do not modify this file
 //If you touch this file your change will be overwritten during the next build
-//This file has been generated on 2018-05-01 20:21:21
+//This file has been generated on 2018-05-02 05:15:38
 
 #include "Arduino.h"
 #include <QTRSensors.h>
@@ -13,8 +13,6 @@
 #include <Servo.h>
 #include <LiquidCrystal.h>
 #include <Math.h>
-#include <LSM303.h>
-#include "Bno055.h"
 
 void zeroHeading() ;
 double getHeading() ;

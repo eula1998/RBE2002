@@ -8,6 +8,9 @@
 #include "PID.h"
 #include "Arduino.h"
 
+/**
+ *  initializes the three gain values
+ */
 PID::PID(double p, double i, double d) :
 		kp(p), ki(i), kd(d) {
 	ki_sum = 0;
