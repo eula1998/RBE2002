@@ -170,7 +170,7 @@ int checkflame() {
 void getFlameHeight(int maxangle) { //
 //trig math taking into account the offset of the flame sensor away from the fan
 
-	double candle_dist = us_fix_dist + us_stepcenter_dist; //in inches
+	double candle_dist = robot.readUsFront() + us_stepcenter_dist; //in inches
 	flame_height = sin((double) (maxangle - 90) / 180 * 2 * M_PI) * candle_dist
 			+ fan_height;
 	int hypothenue = hypot(flame_height, candle_dist); //in inches
@@ -388,6 +388,7 @@ void cliffForward() {
 
 int lastFlameReading = 1023;
 int r;
+double usreading;
 void foundFlame() {
 	switch (wayToFlame) {
 	case TURN_TO_FLAME:
@@ -412,7 +413,7 @@ void foundFlame() {
 //			zeroHeading();
 //			gyroreset();
 			robot.drive(90, 90);
-			delay(900);
+			delay(1500);
 			robot.stop();
 			robot.resetEnc();
 		} else {
@@ -440,14 +441,15 @@ void foundFlame() {
 		}
 		break;
 	case FINISH:
-//		lcd.clear();
+		lcd.clear();
 //		lcd.setCursor(0, 0);
 //		lcd.print("Flame loc: ");
 		lcd.setCursor(0, 0);
 		lcd.print("x:");
-		lcd.print(robot.getX());
+		usreading = robot.readUsFront();
+		lcd.print(robot.getX() + sin(robot.ideal_heading/ 180 * M_PI ) * (8 + usreading ));
 		lcd.print("y:");
-		lcd.print(robot.getY());
+		lcd.print(robot.getY() + cos(robot.ideal_heading/ 180 * M_PI ) * (8 + usreading));
 		lcd.setCursor(0, 1);
 		lcd.print("z:");
 		lcd.print(flame_height);
@@ -544,7 +546,7 @@ void loop() {
 		Serial.println("INIT");
 		break;
 	case DECISION:
-		lcd.print("DECIDE");
+//		lcd.print("DECIDE");
 		Serial.println("DECIDE");
 		decision();
 		break;
@@ -579,7 +581,7 @@ void loop() {
 		cliffForward();
 		break;
 	case FOUND_FLAME:
-		lcd.print("FOUND FLAME");
+//		lcd.print("FOUND FLAME");
 		Serial.println("FOUND FLAME");
 		foundFlame();
 		break;

@@ -157,7 +157,8 @@ bool Robot::odometryTurn(int degree, bool CCW, int maxspeed){
 	} else {
 		drive(0, 0);
 		resetEnc();
-		ideal_heading += odometryHeading;
+//		ideal_heading += odometryHeading;
+		ideal_heading +=degree * (CCW? 1 : -1);
 		return true;
 	}
 	return false;
@@ -332,8 +333,8 @@ void Robot::updateCoor(){
 	double currLeftEnc = readLeftEnc();
 	double currRightEnc = readRightEnc();
 	double delta = ((currLeftEnc - lastLeftEnc) + (currRightEnc - lastRightEnc)) / 2;
-	x += delta * sin(ideal_heading);
-	y += delta * cos(ideal_heading);
+	x += delta * sin(ideal_heading / 180 * M_PI);
+	y += delta * cos(ideal_heading / 180 * M_PI);
 	lastLeftEnc = readLeftEnc();
 	lastRightEnc = readRightEnc();
 }
